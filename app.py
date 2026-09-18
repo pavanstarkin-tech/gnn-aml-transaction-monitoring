@@ -4,6 +4,11 @@ import numpy as np
 import time
 import json
 from datetime import datetime
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+import uvicorn
 
 # ZeroGPU Compatibility for Hugging Face Spaces
 try:
@@ -58,6 +63,267 @@ pipeline_stats["total_ingested"] = len(initial_df)
 pipeline_stats["total_nodes"] = tx_graph.G.number_of_nodes()
 pipeline_stats["total_edges"] = tx_graph.G.number_of_edges()
 pipeline_stats["total_alerts"] = len(alert_engine.alerts_store)
+
+
+# -------------------------------------------------------------
+# FASTAPI APPLICATION & REST API ROUTER
+# -------------------------------------------------------------
+
+api = FastAPI(
+    title="Real-Time GNN AML Transaction Monitoring API",
+    description="High-Throughput REST API for GraphSAGE Inductive Anti-Money Laundering Detection",
+    version="1.0.0"
+)
+
+# Enable CORS for frontend clients (GitHub Pages, localhost, etc.)
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Pydantic Schemas
+class SingleTransactionRequest(BaseModel):
+    sender_account: str
+    receiver_account: str
+    amount: float
+    transaction_type: str = "TRANSFER"
+    channel: str = "RTGS"
+    country: str = "IN"
+
+class SimulationRequest(BaseModel):
+    volume: int = 50
+    pattern_mode: str = "Mixed Banking Stream (with AML Rings & Smurfing)"
+
+class TriageRequest(BaseModel):
+    status: str
+    notes: Optional[str] = ""
+
+
+@api.get("/api/v1/health")
+def get_health():
+    return {
+        "status": "online",
+        "system": "Real-Time GNN AML Transaction Monitoring System",
+        "model": "GraphSAGE (2-Layer Inductive)",
+        "currency": "Indian Rupee (INR)",
+        "hardware": "Zero-A10G GPU",
+        "risk_threshold": 0.70,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@api.get("/api/v1/stats")
+def get_stats():
+    return {
+        "total_ingested": pipeline_stats["total_ingested"],
+        "total_nodes": tx_graph.G.number_of_nodes(),
+        "total_edges": tx_graph.G.number_of_edges(),
+        "total_alerts": len(alert_engine.alerts_store),
+        "last_throughput": pipeline_stats["last_throughput"],
+        "avg_latency": pipeline_stats["avg_latency"]
+    }
+
+@api.post("/api/v1/transactions/score")
+def score_transaction_api(req: SingleTransactionRequest):
+    tx = {
+        "transaction_id": f"TX_{int(time.time() * 1000) % 1000000}",
+        "sender_account": req.sender_account.strip(),
+        "receiver_account": req.receiver_account.strip(),
+        "amount": float(req.amount),
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "transaction_type": req.transaction_type,
+        "channel": req.channel,
+        "country": req.country,
+        "is_aml": 0
+    }
+    cleaned_tx = processor.clean_and_validate(tx)
+    feat_vec = processor.extract_features(cleaned_tx)
+    tx_graph.add_transaction(cleaned_tx)
+    risk_score, _ = gnn_manager.score_transaction(cleaned_tx, tx_graph, processor)
+    eval_result = alert_engine.evaluate_transaction(cleaned_tx, risk_score, tx_graph, processor)
+    mlops.record_production_inference(cleaned_tx["amount"], risk_score)
+    
+    pipeline_stats["total_ingested"] += 1
+    pipeline_stats["total_nodes"] = tx_graph.G.number_of_nodes()
+    pipeline_stats["total_edges"] = tx_graph.G.number_of_edges()
+    pipeline_stats["total_alerts"] = len(alert_engine.alerts_store)
+
+    return {
+        "transaction_id": cleaned_tx["transaction_id"],
+        "sender_account": cleaned_tx["sender_account"],
+        "receiver_account": cleaned_tx["receiver_account"],
+        "amount": cleaned_tx["amount"],
+        "channel": cleaned_tx["channel"],
+        "risk_score": float(risk_score),
+        "is_suspicious": eval_result["is_suspicious"],
+        "decision": eval_result["decision"],
+        "reasons": eval_result.get("reasons", []),
+        "features": feat_vec.tolist(),
+        "timestamp": cleaned_tx["timestamp"]
+    }
+
+@api.post("/api/v1/pipeline/simulate")
+def simulate_pipeline_api(req: SimulationRequest):
+    start_time = time.time()
+    count = max(10, min(int(req.volume), 200))
+    df = data_gen.generate_bulk_stream(total_count=count)
+    
+    for _, row in df.iterrows():
+        tx_dict = row.to_dict()
+        tx_graph.add_transaction(tx_dict)
+        
+    new_alerts_count = 0
+    scored_items = []
+    
+    for _, row in df.iterrows():
+        tx_dict = row.to_dict()
+        r_score, _ = gnn_manager.score_transaction(tx_dict, tx_graph, processor)
+        eval_res = alert_engine.evaluate_transaction(tx_dict, r_score, tx_graph, processor)
+        mlops.record_production_inference(float(tx_dict["amount"]), r_score, int(tx_dict.get("is_aml", 0)))
+        
+        if eval_res["is_suspicious"]:
+            new_alerts_count += 1
+            
+        scored_items.append({
+            "transaction_id": tx_dict["transaction_id"],
+            "sender": tx_dict["sender_account"],
+            "receiver": tx_dict["receiver_account"],
+            "amount": float(tx_dict["amount"]),
+            "channel": tx_dict["channel"],
+            "type": tx_dict["transaction_type"],
+            "risk_score": float(r_score),
+            "is_suspicious": eval_res["is_suspicious"],
+            "status": "HIGH RISK AML" if eval_res["is_suspicious"] else "NORMAL"
+        })
+
+    elapsed = max(0.001, time.time() - start_time)
+    throughput = int(count / elapsed)
+    
+    pipeline_stats["total_ingested"] += count
+    pipeline_stats["total_nodes"] = tx_graph.G.number_of_nodes()
+    pipeline_stats["total_edges"] = tx_graph.G.number_of_edges()
+    pipeline_stats["total_alerts"] = len(alert_engine.alerts_store)
+    pipeline_stats["last_throughput"] = f"{throughput:,} tx/sec"
+    pipeline_stats["avg_latency"] = f"{round((elapsed / max(1, count)) * 1000, 2)} ms"
+
+    return {
+        "processed_count": count,
+        "elapsed_seconds": round(elapsed, 4),
+        "throughput": pipeline_stats["last_throughput"],
+        "avg_latency": pipeline_stats["avg_latency"],
+        "new_alerts_count": new_alerts_count,
+        "stats": {
+            "total_ingested": pipeline_stats["total_ingested"],
+            "total_nodes": pipeline_stats["total_nodes"],
+            "total_edges": pipeline_stats["total_edges"],
+            "total_alerts": pipeline_stats["total_alerts"]
+        },
+        "transactions": scored_items
+    }
+
+@api.get("/api/v1/graph/topology")
+def get_graph_topology(target_account: Optional[str] = None, max_nodes: int = 70):
+    G = tx_graph.G
+    if G.number_of_nodes() == 0:
+        return {"nodes": [], "links": []}
+
+    if target_account and G.has_node(target_account):
+        neighbors = set(G.successors(target_account)) | set(G.predecessors(target_account)) | {target_account}
+        sub_nodes = list(neighbors)[:max_nodes]
+        subG = G.subgraph(sub_nodes)
+    else:
+        degrees = dict(G.degree())
+        top_nodes = sorted(degrees.keys(), key=lambda k: degrees[k], reverse=True)[:max_nodes]
+        subG = G.subgraph(top_nodes)
+
+    cycles = tx_graph.detect_circular_loops(max_length=5)
+    circular_nodes = set()
+    circular_edges = set()
+    for cyc in cycles:
+        circular_nodes.update(cyc)
+        for idx in range(len(cyc)):
+            circular_edges.add((cyc[idx], cyc[(idx + 1) % len(cyc)]))
+
+    nodes_res = []
+    for node in subG.nodes():
+        in_deg = subG.in_degree(node)
+        out_deg = subG.out_degree(node)
+        stats = tx_graph.account_stats.get(node, {
+            "total_sent": 0.0, "total_received": 0.0, "counterparties": set()
+        })
+        
+        if node == target_account:
+            risk_type = "TARGET"
+            status = "INSPECTED FOCUS ACCOUNT"
+        elif node in circular_nodes:
+            risk_type = "RING"
+            status = "CRITICAL: Circular AML Ring"
+        elif out_deg >= 4:
+            risk_type = "SMURF"
+            status = "WARNING: Smurfing Hub"
+        else:
+            risk_type = "NORMAL"
+            status = "NORMAL: Legitimate Account"
+
+        nodes_res.append({
+            "id": str(node),
+            "label": str(node),
+            "risk_type": risk_type,
+            "status": status,
+            "total_sent": stats["total_sent"],
+            "total_received": stats["total_received"],
+            "in_degree": in_deg,
+            "out_degree": out_deg,
+            "counterparties_count": len(stats.get("counterparties", set()))
+        })
+
+    links_res = []
+    link_id = 1
+    for u, v, data in subG.edges(data=True):
+        is_ring = (u, v) in circular_edges or (u in circular_nodes and v in circular_nodes)
+        links_res.append({
+            "id": f"link_{link_id}",
+            "source": str(u),
+            "target": str(v),
+            "amount": float(data.get("amount", 0.0)),
+            "channel": data.get("channel", "TRANSFER"),
+            "is_ring": is_ring
+        })
+        link_id += 1
+
+    return {"nodes": nodes_res, "links": links_res}
+
+@api.get("/api/v1/alerts")
+def get_alerts():
+    return alert_engine.alerts_store[:60]
+
+@api.post("/api/v1/alerts/{alert_id}/triage")
+def triage_alert(alert_id: str, req: TriageRequest):
+    res = alert_engine.update_alert_status(alert_id.strip(), req.status, req.notes)
+    if not res:
+        raise HTTPException(status_code=404, detail="Alert ID not found")
+    return {"status": "success", "alert_id": alert_id, "new_status": req.status}
+
+@api.get("/api/v1/mlops/status")
+def get_mlops_status():
+    drift = mlops.check_drift()
+    perf = mlops.evaluate_performance()
+    return {
+        "drift": drift,
+        "performance": perf,
+        "registry": mlops.model_registry
+    }
+
+@api.post("/api/v1/mlops/retrain")
+def trigger_retrain_api():
+    new_model = mlops.trigger_retraining(gnn_manager, tx_graph, processor, data_gen)
+    return {
+        "status": "success",
+        "new_model": new_model,
+        "registry": mlops.model_registry
+    }
 
 
 # -------------------------------------------------------------
@@ -634,7 +900,7 @@ def switch_sidebar_view(page_name):
 
 
 # -------------------------------------------------------------
-# USER INTERFACE LAYOUT WITH COLLAPSIBLE SIDEBAR & SEAMLESS CENTER DISPLAY
+# GRADIO INTERFACE LAYOUT
 # -------------------------------------------------------------
 
 custom_css = """
@@ -1073,5 +1339,8 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
     btn_run_monitoring.click(run_mlops_monitoring, outputs=[monitoring_output, registry_table])
     btn_retrain.click(execute_auto_retraining, outputs=[retrain_output, registry_table])
 
+# Mount Gradio app onto FastAPI
+app = gr.mount_gradio_app(api, demo, path="/")
+
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, theme=gr.themes.Soft(primary_hue="blue", neutral_hue="slate"), css=custom_css)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
