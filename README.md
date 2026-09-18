@@ -1,15 +1,23 @@
 # Real-Time Graph Neural Network (GNN) AML Transaction Monitoring System
 
+[![Live Dashboard](https://img.shields.io/badge/Live%20React%20App-GitHub%20Pages-sky.svg)](https://pavanstarkin-tech.github.io/gnn-aml-transaction-monitoring/)
+[![FastAPI Backend](https://img.shields.io/badge/REST%20API-FastAPI-009688.svg)](https://shootxpress-gnn-ai-classfier.hf.space/docs)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 [![GraphSAGE](https://img.shields.io/badge/GNN-GraphSAGE%202--Layer-orange.svg)](https://arxiv.org/abs/1706.02216)
-[![NetworkX](https://img.shields.io/badge/Graph-NetworkX-green.svg)](https://networkx.org/)
-[![Gradio](https://img.shields.io/badge/UI-Gradio%206.0-yellow.svg)](https://gradio.app/)
-[![ZeroGPU Ready](https://img.shields.io/badge/HuggingFace-ZeroGPU%20Ready-purple.svg)](https://huggingface.co/spaces/shootxpress/gnn_ai-classfier)
+[![HuggingFace Space](https://img.shields.io/badge/HuggingFace-ZeroGPU%20Ready-purple.svg)](https://huggingface.co/spaces/shootxpress/gnn_ai-classfier)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests: 6 Passed](https://img.shields.io/badge/Tests-6%20Passed-brightgreen.svg)](tests/)
 
 > **An End-to-End, Production-Grade Financial Crime Detection Platform Powered by Graph Neural Networks (GraphSAGE), Dynamic MultiGraph Construction, Real-Time Stream Simulation, and MLOps Drift Monitoring in Indian Rupees (INR).**
+
+---
+
+### **Live Deployments & Endpoints**
+- **Interactive React Web App (GitHub Pages)**: [https://pavanstarkin-tech.github.io/gnn-aml-transaction-monitoring/](https://pavanstarkin-tech.github.io/gnn-aml-transaction-monitoring/)
+- **Hugging Face Space**: [https://huggingface.co/spaces/shootxpress/gnn_ai-classfier](https://huggingface.co/spaces/shootxpress/gnn_ai-classfier)
+- **FastAPI OpenAPI Swagger Documentation**: [https://shootxpress-gnn-ai-classfier.hf.space/docs](https://shootxpress-gnn-ai-classfier.hf.space/docs)
+
 
 ---
 
