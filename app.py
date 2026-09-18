@@ -620,12 +620,21 @@ PAGE_NAMES = [
     "6. MLOps Retraining"
 ]
 
-def navigate_pages(page_name):
-    return [gr.update(visible=(page_name == p)) for p in PAGE_NAMES]
+PAGE_MAP = {
+    "1. Architecture Flow": 0,
+    "2. Pipeline Simulator": 1,
+    "3. AML Pattern Tester": 2,
+    "4. Graph Explorer": 3,
+    "5. Alert & SAR Desk": 4,
+    "6. MLOps Retraining": 5
+}
+
+def switch_sidebar_view(page_name):
+    return gr.update(selected=PAGE_MAP.get(page_name, 0))
 
 
 # -------------------------------------------------------------
-# USER INTERFACE LAYOUT WITH COLLAPSIBLE SIDEBAR
+# USER INTERFACE LAYOUT WITH COLLAPSIBLE SIDEBAR & SEAMLESS CENTER DISPLAY
 # -------------------------------------------------------------
 
 custom_css = """
@@ -680,6 +689,11 @@ body { background-color: #0B0F19; font-family: 'Inter', system-ui, -apple-system
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     color: #F8FAFC !important;
+}
+
+/* Hide top tab headers so ONLY the sidebar navigation controls the active center page */
+#main_view_tabs > .tab-nav {
+    display: none !important;
 }
 """
 
@@ -740,12 +754,12 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
         """)
 
     # ---------------------------------------------------------
-    # MAIN CONTENT PAGES (CONTROLLED BY SIDEBAR NAVIGATION)
+    # MAIN CONTENT CONTAINER - ACTIVE SELECTED PAGE ONLY IN CENTER
     # ---------------------------------------------------------
-    with gr.Column():
+    with gr.Tabs(elem_id="main_view_tabs", selected=0) as main_tabs:
         
         # ================= PAGE 1: ARCHITECTURE FLOWCHART & LIVE TRACE =================
-        with gr.Column(visible=True) as page_flowchart:
+        with gr.TabItem("1. Architecture Flow", id=0):
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
@@ -794,7 +808,7 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     """)
 
         # ================= PAGE 2: REAL-TIME PIPELINE SIMULATOR =================
-        with gr.Column(visible=False) as page_simulator:
+        with gr.TabItem("2. Pipeline Simulator", id=1):
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
@@ -859,7 +873,7 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     sim_graph_plot = gr.Plot(value=visualizer.build_plotly_network(tx_graph, highlight_rings=True, max_nodes=50), label="Live Network Graph")
 
         # ================= PAGE 3: AML PATTERN TESTER =================
-        with gr.Column(visible=False) as page_tester:
+        with gr.TabItem("3. AML Pattern Tester", id=2):
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
@@ -904,7 +918,7 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     single_graph_plot = gr.Plot(value=visualizer.build_plotly_network(tx_graph), label="Ego-Network Visualization")
 
         # ================= PAGE 4: GRAPH EXPLORER =================
-        with gr.Column(visible=False) as page_graph:
+        with gr.TabItem("4. Graph Explorer", id=3):
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
@@ -931,7 +945,7 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
             full_graph_plot = gr.Plot(value=visualizer.build_plotly_network(tx_graph, highlight_rings=True, max_nodes=70), label="Global AML Transaction Graph")
 
         # ================= PAGE 5: ALERTS & SAR DESK =================
-        with gr.Column(visible=False) as page_alerts:
+        with gr.TabItem("5. Alert & SAR Desk", id=4):
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
@@ -965,7 +979,7 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     decision_status_msg = gr.Markdown("")
 
         # ================= PAGE 6: MLOPS & RETRAINING =================
-        with gr.Column(visible=False) as page_mlops:
+        with gr.TabItem("6. MLOps Retraining", id=5):
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
@@ -984,7 +998,6 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     
                     gr.Markdown("---")
                     gr.Markdown("#### Automated Retraining Trigger")
-                    gr.Markdown("Executes automated training on newly labeled investigator feedback and promotes validated model to production.")
                     btn_retrain = gr.Button("Trigger Automatic Retraining Pipeline", variant="stop")
                     retrain_output = gr.Markdown("")
                     
@@ -994,11 +1007,11 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
 
     # ---------------- EVENT BINDINGS ----------------
     
-    # Sidebar Navigation Event
+    # Sidebar Navigation Event (Cleanly switches the center tab item)
     nav_menu.change(
-        navigate_pages,
+        switch_sidebar_view,
         inputs=[nav_menu],
-        outputs=[page_flowchart, page_simulator, page_tester, page_graph, page_alerts, page_mlops]
+        outputs=[main_tabs]
     )
 
     # Stage Click Handlers
