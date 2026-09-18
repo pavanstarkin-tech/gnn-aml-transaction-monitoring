@@ -82,7 +82,7 @@ STAGE_METADATA = {
     3: {
         "title": "Stage 3: Graph Construction",
         "badge": "MultiGraph Engine",
-        "desc": "Constructs a dynamic Directed MultiGraph where accounts are nodes and transfers are edges. Runs cycle detection for closed loops (A -> B -> C -> A).",
+        "desc": "Constructs dynamic Directed MultiGraph (Accounts = Nodes, Transfers = Edges). Detects closed loops (A -> B -> C -> A).",
         "tech": "NetworkX MultiDiGraph Adjacency Engine",
         "code": "G.add_node(sender, total_sent=sent + amount)\nG.add_edge(sender, receiver, amount=amount, channel=channel)\ncycles = list(nx.simple_cycles(G))\nNode Features: [sent_log, recv_log, out_deg, in_deg, flow_ratio, diversity, cycle_flag, risk_prior]"
     },
@@ -96,7 +96,7 @@ STAGE_METADATA = {
     5: {
         "title": "Stage 5: GNN Model Analysis",
         "badge": "GraphSAGE AI",
-        "desc": "Executes 2-Layer Inductive GraphSAGE Convolution over multi-hop neighbor embeddings to capture organized crime syndicate patterns.",
+        "desc": "Executes 2-Layer Inductive GraphSAGE Convolution over multi-hop neighbor embeddings to capture organized crime signatures.",
         "tech": "PyTorch GraphSAGE Neural Network",
         "code": "Layer 1: h_v^(1) = ReLU( W_self * x_v + W_neigh * Mean_{u in N(v)}(x_u) )\nLayer 2: h_v^(2) = ReLU( W_self2 * h_v^(1) + W_neigh2 * Mean_{u in N(v)}(h_u^(1)) )\nClassifier: Sigmoid( Linear( [h_sender || h_receiver || edge_feat] ) )"
     },
@@ -439,7 +439,7 @@ def run_pipeline_simulation(volume: float, pattern_mode: str):
         <div style="background:#1E293B; border-left: 4px solid #3B82F6; padding: 14px; border-radius: 8px;">
             <div style="color:#94A3B8; font-size:11px; font-weight:600; text-transform:uppercase;">TOTAL TRANSACTIONS</div>
             <div style="color:#F8FAFC; font-size:22px; font-weight:bold; margin-top:2px;">{pipeline_stats['total_ingested']:,}</div>
-            <div style="color:#60A5FA; font-size:11px; margin-top:2px;">+{count} processed in this batch</div>
+            <div style="color:#60A5FA; font-size:11px; margin-top:2px;">+{count} in this batch</div>
         </div>
         <div style="background:#1E293B; border-left: 4px solid #10B981; padding: 14px; border-radius: 8px;">
             <div style="color:#94A3B8; font-size:11px; font-weight:600; text-transform:uppercase;">GRAPH TOPOLOGY</div>
@@ -454,7 +454,7 @@ def run_pipeline_simulation(volume: float, pattern_mode: str):
         <div style="background:#1E293B; border-left: 4px solid #F59E0B; padding: 14px; border-radius: 8px;">
             <div style="color:#94A3B8; font-size:11px; font-weight:600; text-transform:uppercase;">STREAM THROUGHPUT</div>
             <div style="color:#F8FAFC; font-size:22px; font-weight:bold; margin-top:2px;">{pipeline_stats['last_throughput']}</div>
-            <div style="color:#FBBF24; font-size:11px; margin-top:2px;">Inference Latency: {pipeline_stats['avg_latency']}</div>
+            <div style="color:#FBBF24; font-size:11px; margin-top:2px;">Latency: {pipeline_stats['avg_latency']}</div>
         </div>
     </div>
     """
@@ -611,42 +611,75 @@ def execute_auto_retraining():
     return msg, registry_df
 
 
+PAGE_NAMES = [
+    "1. Architecture Flow",
+    "2. Pipeline Simulator",
+    "3. AML Pattern Tester",
+    "4. Graph Explorer",
+    "5. Alert & SAR Desk",
+    "6. MLOps Retraining"
+]
+
+def navigate_pages(page_name):
+    return [gr.update(visible=(page_name == p)) for p in PAGE_NAMES]
+
+
 # -------------------------------------------------------------
-# USER INTERFACE LAYOUT WITH TOP TABS
+# USER INTERFACE LAYOUT WITH COLLAPSIBLE SIDEBAR
 # -------------------------------------------------------------
 
 custom_css = """
 body { background-color: #0B0F19; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #E2E8F0; }
 .gradio-container { max-width: 1550px !important; margin: auto; }
-.hero-box { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 20px 24px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 16px; }
+.hero-box { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 18px 24px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 16px; }
+.concept-box { background: rgba(30, 41, 59, 0.7); border: 1px solid #475569; border-radius: 8px; padding: 14px 18px; margin-top: 10px; }
 .explainer-card { background: rgba(30, 41, 59, 0.7); border: 1px solid #38BDF8; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px; }
-.step-pill { background: #0F172A; border: 1px solid #38BDF8; color: #38BDF8; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 6px; }
 
-/* Clean Top Tabs Styling */
-.tabs > .tab-nav {
+/* Uniform, Equal Height Sidebar Navigation Menu */
+.sidebar-radio-group .wrap {
     display: flex !important;
-    gap: 6px !important;
-    background: #111827 !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+.sidebar-radio-group label,
+.sidebar-radio-group .gr-radio-item {
+    min-height: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding: 0 14px !important;
     border-radius: 8px !important;
-    padding: 6px !important;
+    background: #1E293B !important;
     border: 1px solid #334155 !important;
-}
-
-.tabs > .tab-nav > button {
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    padding: 8px 16px !important;
-    border-radius: 6px !important;
-    color: #94A3B8 !important;
-    background: transparent !important;
-    border: none !important;
+    box-sizing: border-box !important;
     transition: all 0.2s ease !important;
+    margin: 0 !important;
+    cursor: pointer !important;
 }
 
-.tabs > .tab-nav > button.selected {
+.sidebar-radio-group label:hover {
+    background: #0F172A !important;
+    border-color: #38BDF8 !important;
+}
+
+.sidebar-radio-group label.selected,
+.sidebar-radio-group input:checked + span,
+.sidebar-radio-group label[data-selected="true"] {
     background: #0284C7 !important;
+    border-color: #38BDF8 !important;
     color: #FFFFFF !important;
-    border: 1px solid #38BDF8 !important;
+}
+
+.sidebar-radio-group span {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: #F8FAFC !important;
 }
 """
 
@@ -657,68 +690,69 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
     <div class="hero-box">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-                <h1 style="color:#60A5FA; margin:0; font-size:23px; font-weight:700; letter-spacing:-0.3px;">
+                <h1 style="color:#60A5FA; margin:0; font-size:22px; font-weight:700; letter-spacing:-0.3px;">
                     Real-Time Graph Neural Network (GNN) AML Transaction Monitoring
                 </h1>
-                <p style="color:#CBD5E1; margin:6px 0 0 0; font-size:14px;">
+                <p style="color:#CBD5E1; margin:6px 0 0 0; font-size:13.5px;">
                     Anti-Money Laundering Detection Platform Powered by GraphSAGE AI and Dynamic Graph Construction (Indian Rupees INR)
                 </p>
             </div>
-            <div style="background:#0F172A; border:1px solid #38BDF8; padding:8px 16px; border-radius:6px; text-align:right;">
-                <div style="color:#38BDF8; font-size:10.5px; font-weight:bold; letter-spacing:0.5px;">SYSTEM STATUS</div>
-                <div style="color:#10B981; font-size:13px; font-weight:bold;">LIVE ENGINE READY</div>
+            <div style="background:#0F172A; border:1px solid #38BDF8; padding:6px 14px; border-radius:6px; text-align:right;">
+                <div style="color:#38BDF8; font-size:10px; font-weight:bold; letter-spacing:0.5px;">ENGINE STATUS</div>
+                <div style="color:#10B981; font-size:12.5px; font-weight:bold;">LIVE PIPELINE READY</div>
+            </div>
+        </div>
+        
+        <div class="concept-box">
+            <div style="color:#F1F5F9; font-size:13px; line-height:1.5;">
+                <b>System Core Purpose:</b> Traditional banking checks isolated transactions (Account A -> Account B) and misses organized money laundering syndicates. 
+                Our platform constructs a live transaction graph and applies a <b>Graph Neural Network (GraphSAGE)</b> to detect multi-party circular routing rings (A -> B -> C -> D -> A), smurfing structuring below Rs 5 Lakhs, and high-velocity transfers in real time.
             </div>
         </div>
     </div>
     """)
 
-    # Main Top Navigation Tabs
-    with gr.Tabs() as tabs:
+    # Collapsible Sidebar Navigation Menu
+    with gr.Sidebar(open=True, label="Navigation Menu"):
+        gr.HTML("""
+        <div style="padding: 4px 0 10px 0;">
+            <div style="color:#94A3B8; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">NAVIGATION</div>
+            <div style="color:#F8FAFC; font-size:14px; font-weight:600; margin-top:2px;">Select Module Page</div>
+        </div>
+        """)
+        
+        nav_menu = gr.Radio(
+            choices=PAGE_NAMES,
+            value="1. Architecture Flow",
+            label="Module Selector",
+            interactive=True,
+            elem_classes=["sidebar-radio-group"]
+        )
+        
+        gr.HTML("""
+        <div style="background:#0F172A; padding:12px; border-radius:8px; border:1px solid #334155; margin-top:20px;">
+            <div style="color:#60A5FA; font-size:11.5px; font-weight:bold;">System Telemetry</div>
+            <div style="color:#94A3B8; font-size:11px; margin-top:4px;">Currency: <b>Indian Rupee (INR)</b></div>
+            <div style="color:#94A3B8; font-size:11px; margin-top:2px;">GNN Model: <b>GraphSAGE (2-Layer)</b></div>
+            <div style="color:#94A3B8; font-size:11px; margin-top:2px;">Hardware: <b>Zero-A10G GPU</b></div>
+            <div style="color:#34D399; font-size:11px; margin-top:2px;">Threshold: <b>Risk Score >= 0.70</b></div>
+        </div>
+        """)
 
-        # ================= TAB 1: OVERVIEW & 30-SECOND QUICK GUIDE =================
-        with gr.Tab("1. Project Overview & Quick Demo"):
-            gr.HTML("""
-            <div class="explainer-card">
-                <div style="color:#38BDF8; font-size:16px; font-weight:bold; margin-bottom:6px;">
-                    What is this project and why is it crucial for modern banking?
-                </div>
-                <div style="color:#E2E8F0; font-size:13.5px; line-height:1.6;">
-                    <b>The Real-World Problem:</b> Criminals evade banking rules by splitting money across multiple accounts (e.g. transfers under Rs 5 Lakhs) or routing money in circles (Account A -> B -> C -> D -> A). Traditional bank software only inspects isolated transfers one-by-one and misses the entire criminal network.
-                    <br/><br/>
-                    <b>Our Solution:</b> We construct a live <b>Interconnected Account Graph (Spiderweb)</b> and apply a <b>Graph Neural Network (GraphSAGE AI)</b> that inspects the multi-hop neighborhood in under 1 millisecond. If a circular laundering loop or smurfing pattern is detected, the AI generates an instant alert and auto-files a Suspicious Activity Report (SAR).
-                </div>
-            </div>
-            """)
-            
-            gr.Markdown("### Instant 1-Click Interactive Test Demo")
-            gr.Markdown("Click a scenario below to run an end-to-end trace through all 8 pipeline stages and watch the AI decision:")
-            
-            with gr.Row():
-                with gr.Column(scale=1):
-                    overview_scenario = gr.Radio(
-                        ["Circular Laundering Ring", "Smurfing / Structuring", "Normal Retail UPI"],
-                        value="Circular Laundering Ring",
-                        label="Select Scenario to Test"
-                    )
-                    btn_quick_demo = gr.Button("Execute Live 8-Stage Pipeline Trace", variant="primary", size="lg")
-                    
-                with gr.Column(scale=2):
-                    overview_trace_box = gr.HTML("""
-                    <div style="background:#0F172A; border:1px dashed #475569; border-radius:8px; padding:20px; text-align:center; color:#94A3B8;">
-                        Select a scenario and click <b>Execute Live 8-Stage Pipeline Trace</b>.
-                    </div>
-                    """)
-                    overview_graph_plot = gr.Plot(value=visualizer.build_plotly_network(tx_graph), label="Ego-Network Visualization")
-
-        # ================= TAB 2: 8-STAGE ARCHITECTURE FLOWCHART =================
-        with gr.Tab("2. 8-Stage Architecture Flow"):
+    # ---------------------------------------------------------
+    # MAIN CONTENT PAGES (CONTROLLED BY SIDEBAR NAVIGATION)
+    # ---------------------------------------------------------
+    with gr.Column():
+        
+        # ================= PAGE 1: ARCHITECTURE FLOWCHART & LIVE TRACE =================
+        with gr.Column(visible=True) as page_flowchart:
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
-                    Interactive 8-Stage Architecture Flowchart
+                    Module 1: Interactive 8-Stage Architecture Flowchart & Live Tracer
                 </div>
                 <div style="color:#E2E8F0; font-size:13px; line-height:1.5;">
-                    Click any of the 8 stage buttons below to inspect its exact mathematical formulation, inputs, outputs, and underlying algorithm in the live SVG flowchart.
+                    Click on any stage selector below to dynamically inspect its mathematical formulation and algorithmic mechanism in the live SVG flowchart. Or use the <b>Live Transaction Execution Tracer</b> to trace an end-to-end transfer across all 8 stages.
                 </div>
             </div>
             """)
@@ -740,16 +774,34 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
 
             # Stage Deep-Dive Card
             stage_info_box = gr.HTML(update_interactive_stage_view(1)[1])
+            
+            gr.Markdown("---")
+            gr.Markdown("### Live Transaction Execution Tracer (Across All 8 Stages)")
+            with gr.Row():
+                with gr.Column(scale=1):
+                    trace_scenario = gr.Radio(
+                        ["Circular Laundering Ring", "Smurfing / Structuring", "Normal Retail UPI"],
+                        value="Circular Laundering Ring",
+                        label="Select Scenario to Trace Through Pipeline"
+                    )
+                    btn_run_trace = gr.Button("Trace Transaction Across 8 Stages", variant="primary", size="lg")
+                    
+                with gr.Column(scale=2):
+                    trace_output_box = gr.HTML("""
+                    <div style="background:#0F172A; border:1px dashed #475569; border-radius:8px; padding:20px; text-align:center; color:#94A3B8;">
+                        Select a scenario and click <b>Trace Transaction Across 8 Stages</b> to execute a live end-to-end trace.
+                    </div>
+                    """)
 
-        # ================= TAB 3: PIPELINE SIMULATOR =================
-        with gr.Tab("3. Real-Time Pipeline Simulator"):
+        # ================= PAGE 2: REAL-TIME PIPELINE SIMULATOR =================
+        with gr.Column(visible=False) as page_simulator:
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
-                    High-Throughput Bank Stream Simulator (10 to 200 Transactions)
+                    Module 2: Real-Time High-Throughput Pipeline Simulator (10 to 200 Transactions)
                 </div>
                 <div style="color:#E2E8F0; font-size:13px; line-height:1.5;">
-                    Simulates high-velocity bank payment traffic. Choose your transaction count, click <b>Run Simulation</b>, and observe real-time graph updates, throughput metrics, and AI risk scoring.
+                    Automates the entire 8-stage pipeline. Select transaction count (up to 200) and click <b>Run Real-Time Pipeline Simulation</b> to process live transactions, update graph topology, and run GraphSAGE scoring.
                 </div>
             </div>
             """)
@@ -800,34 +852,34 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
 
             with gr.Row():
                 with gr.Column(scale=1):
-                    gr.Markdown("#### Real-Time Scored Transactions:")
-                    stream_table = gr.Dataframe(label="Scored Transactions Queue", interactive=False)
+                    gr.Markdown("#### Streamed Transactions Scored by GNN:")
+                    stream_table = gr.Dataframe(label="Real-Time Scored Transactions", interactive=False)
                 with gr.Column(scale=1):
                     gr.Markdown("#### Live Topological Network Graph:")
                     sim_graph_plot = gr.Plot(value=visualizer.build_plotly_network(tx_graph, highlight_rings=True, max_nodes=50), label="Live Network Graph")
 
-        # ================= TAB 4: AML PATTERN TESTER =================
-        with gr.Tab("4. AML Pattern Tester"):
+        # ================= PAGE 3: AML PATTERN TESTER =================
+        with gr.Column(visible=False) as page_tester:
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
-                    Single-Transaction Testing Lab
+                    Module 3: Interactive AML Pattern Tester (Single Transaction)
                 </div>
                 <div style="color:#E2E8F0; font-size:13px; line-height:1.5;">
-                    Test any custom transaction or click one of the 3 scenario presets to evaluate how GraphSAGE determines legitimate vs money-laundering transfers.
+                    Select a scenario preset below (or enter custom INR amounts) and click <b>Process Transaction Through GNN</b> to evaluate risk and explainability.
                 </div>
             </div>
             """)
             
             with gr.Row():
                 with gr.Column(scale=1):
-                    gr.Markdown("#### 1. Choose Scenario Preset:")
+                    gr.Markdown("#### 1. Scenario Presets:")
                     with gr.Row():
                         btn_preset_ring = gr.Button("Circular Ring (A->B->C->A)", variant="stop")
                         btn_preset_smurf = gr.Button("Smurfing / Structuring (Rs 4,85,000)", variant="secondary")
                         btn_preset_normal = gr.Button("Normal Retail UPI (Rs 1,250)", variant="primary")
 
-                    gr.Markdown("#### 2. Transaction Parameters:")
+                    gr.Markdown("#### 2. Parameters:")
                     with gr.Row():
                         sender_input = gr.Textbox(label="Sender Account", value="ACC_1002")
                         receiver_input = gr.Textbox(label="Receiver Account", value="ACC_1045")
@@ -851,12 +903,12 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     single_explain_output = gr.Markdown("")
                     single_graph_plot = gr.Plot(value=visualizer.build_plotly_network(tx_graph), label="Ego-Network Visualization")
 
-        # ================= TAB 5: GRAPH EXPLORER =================
-        with gr.Tab("5. Network Graph Explorer"):
+        # ================= PAGE 4: GRAPH EXPLORER =================
+        with gr.Column(visible=False) as page_graph:
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
-                    Full Topological Network Graph Explorer
+                    Module 4: Full Network Graph Explorer
                 </div>
                 <div style="color:#E2E8F0; font-size:13px; line-height:1.5;">
                     Visualizes the entire financial multi-graph. Red nodes represent accounts in circular laundering rings, yellow nodes represent structuring hubs, and green nodes represent normal legitimate accounts.
@@ -868,17 +920,25 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                 filter_acc = gr.Textbox(label="Focus on Specific Account ID", value="ACC_1002")
                 btn_refresh_graph = gr.Button("Focus & Render Subgraph", variant="primary")
                 
+            gr.Markdown("""
+**Graph Legend & Controls**:
+- **Red Nodes**: Members of detected **Circular Laundering Loops** (A -> B -> C -> A)
+- **Yellow Nodes**: **Smurfing / Structuring Fan-Out Hubs**
+- **Blue Node**: **Currently Selected Focus Account**
+- **Green Nodes**: **Normal Legitimate Accounts**
+- *Use zoom, pan, box-select, and hover over any node or arrow to inspect transaction details.*
+            """)
             full_graph_plot = gr.Plot(value=visualizer.build_plotly_network(tx_graph, highlight_rings=True, max_nodes=70), label="Global AML Transaction Graph")
 
-        # ================= TAB 6: ALERTS & SAR DESK =================
-        with gr.Tab("6. AML Alerts & SAR Desk"):
+        # ================= PAGE 5: ALERTS & SAR DESK =================
+        with gr.Column(visible=False) as page_alerts:
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
-                    Investigator Alert Queue & Suspicious Activity Report (SAR) Filing
+                    Module 5: AML Alerts & Suspicious Activity Report (SAR) Desk
                 </div>
                 <div style="color:#E2E8F0; font-size:13px; line-height:1.5;">
-                    Review AI-flagged high-risk transactions, read the auto-generated regulatory SAR narrative, and finalize regulatory filings.
+                    Review AI-flagged alerts, inspect connected graph topology, and finalize regulatory SAR filings.
                 </div>
             </div>
             """)
@@ -904,15 +964,15 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     btn_save_decision = gr.Button("Submit Decision & File SAR", variant="primary")
                     decision_status_msg = gr.Markdown("")
 
-        # ================= TAB 7: MLOPS DRIFT & RETRAINING =================
-        with gr.Tab("7. MLOps Drift & Retraining"):
+        # ================= PAGE 6: MLOPS & RETRAINING =================
+        with gr.Column(visible=False) as page_mlops:
             gr.HTML("""
             <div class="explainer-card">
                 <div style="color:#38BDF8; font-size:15px; font-weight:bold; margin-bottom:4px;">
-                    Continuous Model Monitoring & Automated Retraining
+                    Module 6: MLOps Drift Monitoring & Automated Retraining
                 </div>
                 <div style="color:#E2E8F0; font-size:13px; line-height:1.5;">
-                    Monitors production data drift using the Kolmogorov-Smirnov (KS) test and executes automated retraining when data distributions change.
+                    Continuous monitoring pipeline detecting concept/data drift using the Kolmogorov-Smirnov (KS) test and triggering automated GraphSAGE GNN retraining.
                 </div>
             </div>
             """)
@@ -924,6 +984,7 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
                     
                     gr.Markdown("---")
                     gr.Markdown("#### Automated Retraining Trigger")
+                    gr.Markdown("Executes automated training on newly labeled investigator feedback and promotes validated model to production.")
                     btn_retrain = gr.Button("Trigger Automatic Retraining Pipeline", variant="stop")
                     retrain_output = gr.Markdown("")
                     
@@ -933,11 +994,11 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
 
     # ---------------- EVENT BINDINGS ----------------
     
-    # Overview Tab Quick Demo Button
-    btn_quick_demo.click(
-        execute_live_trace_flow,
-        inputs=[overview_scenario],
-        outputs=[overview_trace_box, overview_graph_plot, alerts_table]
+    # Sidebar Navigation Event
+    nav_menu.change(
+        navigate_pages,
+        inputs=[nav_menu],
+        outputs=[page_flowchart, page_simulator, page_tester, page_graph, page_alerts, page_mlops]
     )
 
     # Stage Click Handlers
@@ -949,6 +1010,13 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
     stage_btn_6.click(lambda: update_interactive_stage_view(6), outputs=[flowchart_svg_display, stage_info_box])
     stage_btn_7.click(lambda: update_interactive_stage_view(7), outputs=[flowchart_svg_display, stage_info_box])
     stage_btn_8.click(lambda: update_interactive_stage_view(8), outputs=[flowchart_svg_display, stage_info_box])
+
+    # Step-by-step Trace Button
+    btn_run_trace.click(
+        execute_live_trace_flow,
+        inputs=[trace_scenario],
+        outputs=[trace_output_box, single_graph_plot, alerts_table]
+    )
 
     # Simulation Trigger
     btn_run_sim.click(
