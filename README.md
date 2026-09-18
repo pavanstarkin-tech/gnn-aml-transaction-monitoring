@@ -167,8 +167,8 @@ abbhas_final_year_project/
 ### Setup Steps
 ```bash
 # 1. Clone the repository
-git clone https://github.com/pavanstarkin-tech/inhibit.git
-cd inhibit
+git clone https://github.com/pavanstarkin-tech/gnn-aml-transaction-monitoring.git
+cd gnn-aml-transaction-monitoring
 
 # 2. Create and activate a Python virtual environment
 python -m venv .venv
@@ -221,6 +221,6 @@ This project is licensed under the **MIT License**.
   title={Real-Time Graph Neural Network (GNN) AML Transaction Monitoring System},
   author={Final Year Research Team},
   year={2026},
-  howpublished={\url{https://github.com/pavanstarkin-tech/inhibit}}
+  howpublished={\url{https://github.com/pavanstarkin-tech/gnn-aml-transaction-monitoring}}
 }
 ```
