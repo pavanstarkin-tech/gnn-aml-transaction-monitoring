@@ -65,7 +65,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
   const simNodesRef = useRef([]);
   const simLinksRef = useRef([]);
 
-  // Initialize node layout with wide perimeter spread
+  // Initialize node layout with pre-settled physics for zero shaking/flicker
   useEffect(() => {
     const width = 850;
     const height = 500;
@@ -73,9 +73,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
     const nodes = (safeData.nodes || []).map((node, i) => {
       const angle = (i / Math.max(1, safeData.nodes.length)) * 2 * Math.PI;
-      const radius = 130 + (i % 5) * 45;
-      const x = width / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 35;
-      const y = height / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 35;
+      const radius = 135 + (i % 5) * 45;
+      const x = width / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 30;
+      const y = height / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 30;
 
       let risk = typeof node.risk_score === 'number' && !isNaN(node.risk_score) ? node.risk_score : null;
       if (risk === null) {
@@ -95,7 +95,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       risk = parseFloat(Math.min(0.99, Math.max(0.01, risk)).toFixed(3));
       const isFlagged = Boolean(node.is_aml_flagged || risk >= 0.70);
       
-      // Light enterprise banking colors
+      // Multi-tier enterprise banking colors
       const color = risk >= 0.85 
         ? '#DC2626' // Crimson Red
         : risk >= 0.70 
@@ -104,7 +104,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         ? '#D97706' // Amber
         : '#164E8A'; // Deep Banking Navy
 
-      const accType = node.type || (risk >= 0.85 ? "Circular Mule Ring Hub" : (risk >= 0.70 ? "Smurfing Fan-Out Node" : "Retail Banking Account"));
+      const accType = node.type || (risk >= 0.85 ? "Circular Mule Ring Hub" : (risk >= 0.70 ? "Smurfing Fan-Out Node" : (risk >= 0.40 ? "Corporate Gateway Hub" : "Retail Banking Account")));
       const vol = Number(node.volume_inr) || Number((node.total_sent || 0) + (node.total_received || 0)) || Math.floor(risk * 850000 + 45000);
 
       const simNode = {
@@ -118,7 +118,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         y: isNaN(y) ? height / 2 : y,
         vx: 0,
         vy: 0,
-        radius: isFlagged ? 11 : 7.5,
+        radius: isFlagged ? 11 : 8,
         color,
         is_aml_flagged: isFlagged
       };
@@ -143,6 +143,57 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       }
     });
 
+    // Synchronously settle layout (80 iterations) for zero shaking at runtime
+    for (let step = 0; step < 80; step++) {
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[j].x - nodes[i].x;
+          const dy = nodes[j].y - nodes[i].y;
+          const distSq = dx * dx + dy * dy;
+          const dist = Math.sqrt(distSq) || 1;
+          if (dist < 280) {
+            const repForce = Math.min(8, 1200 / (distSq + 300));
+            const fx = (dx / dist) * repForce;
+            const fy = (dy / dist) * repForce;
+            nodes[i].x -= fx;
+            nodes[i].y -= fy;
+            nodes[j].x += fx;
+            nodes[j].y += fy;
+          }
+        }
+      }
+
+      for (let k = 0; k < links.length; k++) {
+        const link = links[k];
+        const src = link.sourceNode;
+        const tgt = link.targetNode;
+        const dx = tgt.x - src.x;
+        const dy = tgt.y - src.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const idealDist = link.is_suspicious ? 115 : 140;
+        const springForce = (dist - idealDist) * 0.035;
+        const sfx = (dx / dist) * springForce;
+        const sfy = (dy / dist) * springForce;
+        src.x += sfx;
+        src.y += sfy;
+        tgt.x -= sfx;
+        tgt.y -= sfy;
+      }
+
+      // Constrain within bounds
+      const margin = 50;
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        if (n.x < margin) n.x = margin;
+        if (n.x > width - margin) n.x = width - margin;
+        if (n.y < margin) n.y = margin;
+        if (n.y > height - margin) n.y = height - margin;
+      }
+    }
+
+    // Freeze all velocities
+    nodes.forEach(n => { n.vx = 0; n.vy = 0; });
+
     simNodesRef.current = nodes;
     simLinksRef.current = links;
 
@@ -152,7 +203,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     }
   }, [safeData, selectedNodeId]);
 
-  // Main Canvas Render Loop (Light Theme)
+  // Main Canvas Render Loop (Light Theme, Zero Shaking)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -165,7 +216,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       particles.push({
         linkIdx: p,
         progress: Math.random(),
-        speed: 0.004 + Math.random() * 0.006
+        speed: 0.005 + Math.random() * 0.005
       });
     }
 
@@ -207,79 +258,16 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
         const nodes = simNodesRef.current;
         const links = simLinksRef.current;
+        const activeSelId = selectedNode?.id;
 
-        // Physics Simulation Step (Coulomb Repulsion + Hooke Springs)
-        if (nodes.length > 0) {
-          // 1. Universal Coulomb Repulsion
-          for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-              const dx = nodes[j].x - nodes[i].x;
-              const dy = nodes[j].y - nodes[i].y;
-              const distSq = dx * dx + dy * dy;
-              const dist = Math.sqrt(distSq) || 1;
-              if (dist < 320) {
-                const repForce = Math.min(10, 1300 / (distSq + 400));
-                const fx = (dx / dist) * repForce;
-                const fy = (dy / dist) * repForce;
-                if (draggingNodeId !== nodes[i].id) {
-                  nodes[i].vx -= fx;
-                  nodes[i].vy -= fy;
-                }
-                if (draggingNodeId !== nodes[j].id) {
-                  nodes[j].vx += fx;
-                  nodes[j].vy += fy;
-                }
-              }
-            }
-          }
-
-          // 2. Hooke's Spring Law along Connected Edges
-          for (let k = 0; k < links.length; k++) {
-            const link = links[k];
-            const src = link.sourceNode;
-            const tgt = link.targetNode;
-            const dx = tgt.x - src.x;
-            const dy = tgt.y - src.y;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            const idealDist = link.is_suspicious ? 110 : 145;
-            const springForce = (dist - idealDist) * 0.018;
-            const sfx = (dx / dist) * springForce;
-            const sfy = (dy / dist) * springForce;
-
-            if (draggingNodeId !== src.id) {
-              src.vx += sfx;
-              src.vy += sfy;
-            }
-            if (draggingNodeId !== tgt.id) {
-              tgt.vx -= sfx;
-              tgt.vy -= sfy;
-            }
-          }
-
-          // 3. Center Gravity & Velocity Damping (Zero-Flicker Stabilization)
-          for (let i = 0; i < nodes.length; i++) {
-            if (draggingNodeId === nodes[i].id) continue;
-            const node = nodes[i];
-            const cdx = width / 2 - node.x;
-            const cdy = height / 2 - node.y;
-            node.vx += cdx * 0.0015;
-            node.vy += cdy * 0.0015;
-            node.vx *= 0.80;
-            node.vy *= 0.80;
-
-            if (Math.abs(node.vx) < 0.02) node.vx = 0;
-            if (Math.abs(node.vy) < 0.02) node.vy = 0;
-
-            node.x += node.vx;
-            node.y += node.vy;
-
-            // Smooth boundary containment
-            const margin = 45;
-            if (isNaN(node.x) || node.x < margin) { node.x = margin; node.vx = 0; }
-            if (node.x > width - margin) { node.x = width - margin; node.vx = 0; }
-            if (isNaN(node.y) || node.y < margin) { node.y = margin; node.vy = 0; }
-            if (node.y > height - margin) { node.y = height - margin; node.vy = 0; }
-          }
+        // Set of connected neighbor IDs for the selected node
+        const connectedNeighborIds = new Set();
+        if (activeSelId) {
+          connectedNeighborIds.add(activeSelId);
+          links.forEach(l => {
+            if (l.sourceNode.id === activeSelId) connectedNeighborIds.add(l.targetNode.id);
+            if (l.targetNode.id === activeSelId) connectedNeighborIds.add(l.sourceNode.id);
+          });
         }
 
         // Draw Links / Connections
@@ -288,12 +276,21 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
           const src = link.sourceNode;
           const tgt = link.targetNode;
+          const isConnectedToSelected = activeSelId && (src.id === activeSelId || tgt.id === activeSelId);
 
           ctx.beginPath();
           ctx.moveTo(src.x, src.y);
           ctx.lineTo(tgt.x, tgt.y);
 
-          if (link.is_suspicious) {
+          if (isConnectedToSelected) {
+            ctx.strokeStyle = link.is_suspicious ? '#DC2626' : '#2563EB';
+            ctx.lineWidth = 3.5;
+            ctx.setLineDash(link.is_suspicious ? [5, 3] : []);
+          } else if (activeSelId) {
+            ctx.strokeStyle = 'rgba(203, 213, 225, 0.35)';
+            ctx.lineWidth = 1.0;
+            ctx.setLineDash([]);
+          } else if (link.is_suspicious) {
             ctx.strokeStyle = '#DC2626';
             ctx.lineWidth = 2.2;
             ctx.setLineDash([4, 3]);
@@ -307,14 +304,16 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
           // Arrow direction indicator
           const angle = Math.atan2(tgt.y - src.y, tgt.x - src.x);
-          const arrowDist = 15;
+          const arrowDist = 16;
           const ax = tgt.x - Math.cos(angle) * arrowDist;
           const ay = tgt.y - Math.sin(angle) * arrowDist;
-          ctx.fillStyle = link.is_suspicious ? '#DC2626' : '#94A3B8';
+          ctx.fillStyle = isConnectedToSelected 
+            ? (link.is_suspicious ? '#DC2626' : '#2563EB')
+            : (activeSelId ? 'rgba(148, 163, 184, 0.4)' : (link.is_suspicious ? '#DC2626' : '#94A3B8'));
           ctx.beginPath();
           ctx.moveTo(ax, ay);
-          ctx.lineTo(ax - 5 * Math.cos(angle - Math.PI / 6), ay - 5 * Math.sin(angle - Math.PI / 6));
-          ctx.lineTo(ax - 5 * Math.cos(angle + Math.PI / 6), ay - 5 * Math.sin(angle + Math.PI / 6));
+          ctx.lineTo(ax - 6 * Math.cos(angle - Math.PI / 6), ay - 6 * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(ax - 6 * Math.cos(angle + Math.PI / 6), ay - 6 * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
           ctx.fill();
         });
@@ -343,32 +342,81 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         nodes.forEach((node) => {
           if (filterRiskOnly && !node.is_aml_flagged) return;
 
-          const isHighlighted = selectedNode && selectedNode.id === node.id;
+          const isSelected = activeSelId && activeSelId === node.id;
+          const isConnectedNeighbor = activeSelId && connectedNeighborIds.has(node.id);
+          const isDimmed = activeSelId && !isConnectedNeighbor;
 
-          // Halo for Suspicious or Selected Nodes
-          if (node.is_aml_flagged || isHighlighted) {
+          const currentRadius = isSelected ? node.radius + 4 : node.radius;
+
+          // Halo for Selected or Critical Flagged Nodes
+          if (isSelected) {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, node.radius + (isHighlighted ? 7 : 4), 0, 2 * Math.PI);
-            ctx.fillStyle = node.is_aml_flagged ? 'rgba(220, 38, 38, 0.15)' : 'rgba(37, 99, 235, 0.15)';
+            ctx.arc(node.x, node.y, currentRadius + 8, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(37, 99, 235, 0.25)';
+            ctx.fill();
+          } else if (node.is_aml_flagged) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, currentRadius + 4, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(220, 38, 38, 0.15)';
             ctx.fill();
           }
 
-          // Node Body
+          // Node Body Fill
           ctx.beginPath();
-          ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
-          ctx.fillStyle = node.color;
+          ctx.arc(node.x, node.y, currentRadius, 0, 2 * Math.PI);
+          ctx.fillStyle = isDimmed ? `${node.color}90` : node.color;
           ctx.fill();
 
-          // Border Ring
-          ctx.strokeStyle = isHighlighted ? '#1E293B' : '#FFFFFF';
-          ctx.lineWidth = isHighlighted ? 2.5 : 1.5;
-          ctx.stroke();
+          // High-Contrast Borders
+          if (isSelected) {
+            // Outer thick white ring
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 4;
+            ctx.stroke();
 
-          // Node Text Label
-          ctx.font = '10px -apple-system, sans-serif';
-          ctx.fillStyle = isHighlighted ? '#0F172A' : '#475569';
-          ctx.textAlign = 'center';
-          ctx.fillText(node.id, node.x, node.y + node.radius + 12);
+            // Inner dark slate ring
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, currentRadius + 2, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#0F172A';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          } else if (isConnectedNeighbor) {
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          // Node Text Label with Pill Background for Selected Nodes
+          if (isSelected) {
+            const labelText = node.id;
+            ctx.font = 'bold 11px -apple-system, sans-serif';
+            const textMetrics = ctx.measureText(labelText);
+            const textWidth = textMetrics.width;
+
+            // Draw white pill background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.strokeStyle = '#0F172A';
+            ctx.lineWidth = 1.5;
+            const pillX = node.x - textWidth / 2 - 6;
+            const pillY = node.y + currentRadius + 6;
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, textWidth + 12, 18, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#0F172A';
+            ctx.textAlign = 'center';
+            ctx.fillText(labelText, node.x, pillY + 13);
+          } else {
+            ctx.font = '10px -apple-system, sans-serif';
+            ctx.fillStyle = isDimmed ? '#94A3B8' : '#334155';
+            ctx.textAlign = 'center';
+            ctx.fillText(node.id, node.x, node.y + currentRadius + 12);
+          }
         });
 
         ctx.restore();
@@ -384,7 +432,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [panOffset, zoomLevel, filterRiskOnly, selectedNode, draggingNodeId]);
+  }, [panOffset, zoomLevel, filterRiskOnly, selectedNode]);
 
   // Resize handler
   useEffect(() => {
@@ -400,7 +448,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Mouse drag & click handlers
+  // Mouse drag & click handlers (Zero jitter, clean selection)
   const handleMouseDown = (e) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -417,7 +465,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     (simNodesRef.current || []).forEach((node) => {
       const dx = node.x - worldX;
       const dy = node.y - worldY;
-      if (Math.sqrt(dx * dx + dy * dy) <= node.radius + 6) {
+      if (Math.sqrt(dx * dx + dy * dy) <= node.radius + 8) {
         clicked = node;
       }
     });
@@ -448,8 +496,6 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       if (node) {
         node.x = worldX;
         node.y = worldY;
-        node.vx = 0;
-        node.vy = 0;
       }
     } else if (isDraggingCanvas) {
       setPanOffset({

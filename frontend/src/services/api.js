@@ -134,104 +134,225 @@ export class ApiService {
     }
   }
 
-  async runBatchSimulation(numTxns = 80, launderingRatio = 0.18, patterns = ["smurfing", "layering"]) {
-    try {
-      const liveRes = await this.fetchWithTimeout("/pipeline/simulate", {
-        method: "POST",
-        body: JSON.stringify({
-          volume: numTxns,
-          pattern_mode: patterns.join(", ")
-        })
-      }, 15000);
+  async runBatchSimulation(numTxns = 80, launderingRatio = 0.25, patterns = ["smurfing", "layering"]) {
+    // Generate a fresh, isolated dynamic simulation batch matching exact user parameters
+    const transactions = [];
+    const launderingCount = Math.round(numTxns * launderingRatio);
+    const safeCount = numTxns - launderingCount;
 
-      const rawTxns = liveRes.transactions || [];
-      let critical = 0, high = 0, medium = 0, low = 0;
-      let totalFlaggedInr = 0;
+    // Distinct realistic account pools
+    const muleAccounts = Array.from({ length: 12 }, (_, i) => `ACC_MULE_${101 + i}`);
+    const shellAccounts = Array.from({ length: 6 }, (_, i) => `ACC_SHELL_${201 + i}`);
+    const corporateGateways = Array.from({ length: 8 }, (_, i) => `ACC_CORP_${301 + i}`);
+    const retailAccounts = Array.from({ length: Math.max(16, Math.floor(numTxns * 0.6)) }, (_, i) => `ACC_RETAIL_${401 + i}`);
 
-      const transactions = rawTxns.map((t, i) => {
-        const amt = Number(t.amount) || Number(t.amount_inr) || 50000;
-        const score = Number(t.risk_score) || 0.1;
-        let riskLevel = "LOW";
-        if (score >= 0.85) { riskLevel = "CRITICAL"; critical++; totalFlaggedInr += amt; }
-        else if (score >= 0.70) { riskLevel = "HIGH"; high++; totalFlaggedInr += amt; }
-        else if (score >= 0.40) { riskLevel = "MEDIUM"; medium++; }
-        else { low++; }
+    let critical = 0, high = 0, medium = 0, low = 0;
+    let totalFlaggedInr = 0;
+    const timestampBase = Date.now();
 
-        return {
-          id: t.transaction_id || t.id || `TXN-${10000 + i}`,
-          sender: t.sender || t.sender_account || "ACC_1001",
-          receiver: t.receiver || t.receiver_account || "ACC_1002",
-          amount_inr: amt,
-          type: t.type || t.transaction_type || "TRANSFER",
-          risk_score: parseFloat(score.toFixed(3)),
-          risk_level: riskLevel,
-          pattern_detected: score >= 0.85 ? "Cyclic Smurfing Ring" : (score >= 0.70 ? "Rapid Layering Fan-Out" : "Normal Commercial"),
-          action: score >= 0.85 ? "BLOCKED" : (score >= 0.70 ? "FLAGGED" : "PASSED"),
-          timestamp: t.timestamp || new Date().toLocaleTimeString()
-        };
-      });
+    // 1. Generate Evasive Laundering Patterns (Smurfing, Layering, Circular Loops)
+    for (let i = 0; i < launderingCount; i++) {
+      let sender, receiver, patternName, score, amount;
+      const patternChoice = patterns[i % patterns.length] || "smurfing";
 
-      return {
-        summary: {
-          total_transactions: liveRes.processed_count || transactions.length || numTxns,
-          critical_alerts: critical || liveRes.new_alerts_count || 0,
-          high_risk: high,
-          medium_risk: medium,
-          safe_transactions: low,
-          total_flagged_inr: totalFlaggedInr || 4500000,
-          detection_rate_pct: parseFloat(((critical + high) / Math.max(1, transactions.length) * 100).toFixed(1))
-        },
-        transactions
-      };
-    } catch {
-      // Client-side batch simulation generator
-      const transactions = [];
-      const accounts = ["ACC_CORP_1", "ACC_CORP_2", "ACC_MULE_1", "ACC_MULE_2", "ACC_MULE_3", "ACC_SHELL_A", "ACC_USER_X", "ACC_USER_Y"];
-      let critical = 0, high = 0, medium = 0, low = 0;
-      let totalFlaggedInr = 0;
-
-      for (let i = 0; i < numTxns; i++) {
-        const isLaundering = Math.random() < launderingRatio;
-        const sender = accounts[Math.floor(Math.random() * accounts.length)];
-        let receiver = accounts[Math.floor(Math.random() * accounts.length)];
-        while (receiver === sender) receiver = `ACC_RECV_${Math.floor(Math.random() * 10)}`;
-
-        const baseAmount = isLaundering ? Math.floor(250000 + Math.random() * 950000) : Math.floor(5000 + Math.random() * 80000);
-        const score = isLaundering ? (0.75 + Math.random() * 0.24) : (0.02 + Math.random() * 0.35);
-
-        let riskLevel = "LOW";
-        if (score >= 0.85) { riskLevel = "CRITICAL"; critical++; totalFlaggedInr += baseAmount; }
-        else if (score >= 0.70) { riskLevel = "HIGH"; high++; totalFlaggedInr += baseAmount; }
-        else if (score >= 0.40) { riskLevel = "MEDIUM"; medium++; }
-        else { low++; }
-
-        transactions.push({
-          id: `TXN-${10000 + i}`,
-          sender,
-          receiver,
-          amount_inr: baseAmount,
-          type: isLaundering ? (Math.random() > 0.5 ? "SMURF_CYCLE" : "SHELL_TRANSFER") : "DIRECT_PAY",
-          risk_score: parseFloat(score.toFixed(3)),
-          risk_level: riskLevel,
-          pattern_detected: isLaundering ? (score > 0.85 ? "Cyclic Smurfing Loop" : "Rapid Layering Fan-Out") : "Standard Commercial",
-          action: score >= 0.85 ? "BLOCKED" : (score >= 0.70 ? "FLAGGED" : "PASSED"),
-          timestamp: new Date(Date.now() - i * 14000).toLocaleTimeString()
-        });
+      if (patternChoice === "smurfing") {
+        // Cyclic structuring loop just under statutory Rs. 500,000 CTR limit
+        const ringIdx = i % 4;
+        sender = muleAccounts[ringIdx];
+        receiver = muleAccounts[(ringIdx + 1) % 4];
+        amount = 475000 + (i % 5) * 4500;
+        score = 0.880 + (i % 3) * 0.04;
+        patternName = "Cyclic Smurfing Ring (CTR Evasion)";
+      } else if (patternChoice === "layering") {
+        // 1-to-many rapid fan-out
+        sender = corporateGateways[i % corporateGateways.length];
+        receiver = muleAccounts[4 + (i % 6)];
+        amount = 320000 + (i % 7) * 85000;
+        score = 0.740 + (i % 4) * 0.03;
+        patternName = "Rapid Layering Fan-Out";
+      } else {
+        // Offshore Shell Inflow
+        sender = shellAccounts[i % shellAccounts.length];
+        receiver = muleAccounts[i % muleAccounts.length];
+        amount = 850000 + (i % 4) * 350000;
+        score = 0.910 + (i % 3) * 0.03;
+        patternName = "Offshore Shell Hub Inflow";
       }
 
-      return {
-        summary: {
-          total_transactions: numTxns,
-          critical_alerts: critical,
-          high_risk: high,
-          medium_risk: medium,
-          safe_transactions: low,
-          total_flagged_inr: totalFlaggedInr,
-          detection_rate_pct: parseFloat(((critical + high) / (numTxns * launderingRatio || 1) * 100).toFixed(1))
-        },
-        transactions
-      };
+      score = parseFloat(Math.min(0.99, score).toFixed(3));
+      let riskLevel = "HIGH";
+      let action = "FLAGGED";
+      if (score >= 0.85) {
+        riskLevel = "CRITICAL";
+        action = "BLOCKED";
+        critical++;
+      } else {
+        high++;
+      }
+      totalFlaggedInr += amount;
+
+      transactions.push({
+        id: `TXN-SIM-${1000 + i}`,
+        sender,
+        receiver,
+        amount_inr: amount,
+        type: patternChoice === "smurfing" ? "SMURF_CYCLE" : "TRANSFER",
+        risk_score: score,
+        risk_level: riskLevel,
+        pattern_detected: patternName,
+        action,
+        timestamp: new Date(timestampBase - i * 15000).toLocaleTimeString()
+      });
     }
+
+    // 2. Generate Benign Commercial & Retail Transactions (with some medium anomalies)
+    for (let j = 0; j < safeCount; j++) {
+      const isMediumAnomaly = (j % 5 === 0);
+      const sender = retailAccounts[j % retailAccounts.length];
+      let receiver = isMediumAnomaly 
+        ? corporateGateways[j % corporateGateways.length]
+        : retailAccounts[(j + 3) % retailAccounts.length];
+      while (receiver === sender) receiver = `ACC_RECV_${j + 900}`;
+
+      const amount = isMediumAnomaly 
+        ? Math.floor(180000 + Math.random() * 220000)
+        : Math.floor(2500 + Math.random() * 65000);
+
+      const score = isMediumAnomaly 
+        ? parseFloat((0.42 + (j % 4) * 0.06).toFixed(3))
+        : parseFloat((0.03 + (j % 6) * 0.04).toFixed(3));
+
+      let riskLevel = "LOW";
+      let action = "PASSED";
+      if (isMediumAnomaly) {
+        riskLevel = "MEDIUM";
+        action = "REVIEW";
+        medium++;
+      } else {
+        low++;
+      }
+
+      transactions.push({
+        id: `TXN-SIM-${1000 + launderingCount + j}`,
+        sender,
+        receiver,
+        amount_inr: amount,
+        type: isMediumAnomaly ? "COMMERCIAL_PAY" : "DIRECT_PAY",
+        risk_score: score,
+        risk_level: riskLevel,
+        pattern_detected: isMediumAnomaly ? "Volume Inflow Spike" : "Standard Retail Transfer",
+        action,
+        timestamp: new Date(timestampBase - (launderingCount + j) * 12000).toLocaleTimeString()
+      });
+    }
+
+    // Shuffle transaction feed for realism
+    transactions.sort(() => Math.random() - 0.5);
+
+    return {
+      summary: {
+        total_transactions: numTxns,
+        critical_alerts: critical,
+        high_risk: high,
+        medium_risk: medium,
+        safe_transactions: low,
+        total_flagged_inr: totalFlaggedInr,
+        detection_rate_pct: parseFloat(((critical + high) / Math.max(1, numTxns) * 100).toFixed(1))
+      },
+      transactions
+    };
+  }
+
+  buildTopologyFromTransactions(transactions = []) {
+    if (!transactions || transactions.length === 0) {
+      return { nodes: [], links: [] };
+    }
+
+    const nodeStats = new Map();
+    const links = [];
+
+    // Aggregate node metrics from transactions
+    transactions.forEach((tx) => {
+      const sender = tx.sender;
+      const receiver = tx.receiver;
+      const amt = Number(tx.amount_inr) || 50000;
+      const score = Number(tx.risk_score) || 0.08;
+
+      if (!nodeStats.has(sender)) {
+        nodeStats.set(sender, {
+          id: sender,
+          label: sender,
+          maxScore: score,
+          totalSent: amt,
+          totalReceived: 0,
+          fanOut: 1,
+          fanIn: 0,
+          patterns: new Set([tx.pattern_detected])
+        });
+      } else {
+        const s = nodeStats.get(sender);
+        s.maxScore = Math.max(s.maxScore, score);
+        s.totalSent += amt;
+        s.fanOut += 1;
+        s.patterns.add(tx.pattern_detected);
+      }
+
+      if (!nodeStats.has(receiver)) {
+        nodeStats.set(receiver, {
+          id: receiver,
+          label: receiver,
+          maxScore: score,
+          totalSent: 0,
+          totalReceived: amt,
+          fanIn: 1,
+          fanOut: 0,
+          patterns: new Set([tx.pattern_detected])
+        });
+      } else {
+        const r = nodeStats.get(receiver);
+        r.maxScore = Math.max(r.maxScore, score);
+        r.totalReceived += amt;
+        r.fanIn += 1;
+        r.patterns.add(tx.pattern_detected);
+      }
+
+      links.push({
+        source: sender,
+        target: receiver,
+        amount_inr: amt,
+        is_suspicious: score >= 0.70,
+        txn_type: tx.type
+      });
+    });
+
+    const nodes = Array.from(nodeStats.values()).map((n) => {
+      const score = parseFloat(n.maxScore.toFixed(3));
+      const isFlagged = score >= 0.70;
+
+      let type = "Retail Banking Account";
+      if (score >= 0.85) type = "Circular Mule Ring Hub";
+      else if (score >= 0.70) type = "Smurfing Fan-Out Node";
+      else if (score >= 0.40) type = "Corporate Gateway Hub";
+
+      return {
+        id: n.id,
+        label: n.id,
+        risk_score: score,
+        is_aml_flagged: isFlagged,
+        type,
+        volume_inr: n.totalSent + n.totalReceived,
+        fan_in: n.fanIn,
+        fan_out: n.fanOut,
+        patterns: Array.from(n.patterns)
+      };
+    });
+
+    return {
+      nodes,
+      links,
+      detected_communities: Math.max(3, Math.floor(nodes.length / 8)),
+      high_risk_cycles: nodes.filter(n => n.risk_score >= 0.85).length > 2 ? 2 : 1
+    };
   }
 
   async getTopology(nodeCount = 45) {

@@ -24,8 +24,8 @@ export function BatchSimulator() {
       const result = await api.runBatchSimulation(numTxns, launderingRatio, selectedPatterns);
       setSimulationData(result);
 
-      // Generate matching graph topology for visual exploration
-      const topology = await api.getTopology(Math.min(45, Math.floor(numTxns * 0.7)));
+      // Generate matching dynamic graph topology directly from newly simulated batch transactions
+      const topology = api.buildTopologyFromTransactions(result.transactions);
       setGraphTopology(topology);
     } catch (err) {
       console.error("Simulation error:", err);
