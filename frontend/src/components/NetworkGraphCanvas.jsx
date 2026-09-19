@@ -6,7 +6,8 @@ import {
   Filter, 
   ShieldAlert, 
   Activity,
-  Layers
+  Layers,
+  Info
 } from 'lucide-react';
 
 export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
@@ -25,7 +26,6 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     if (data && data.nodes && data.nodes.length > 0) {
       return data;
     }
-    // High-quality default AML cluster
     const defaultNodes = [];
     const types = ["Mule Account", "Shell Hub", "Retail Account", "Corporate Gateway", "Brokerage Node"];
     for (let i = 0; i < 35; i++) {
@@ -72,11 +72,10 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     return { nodes: defaultNodes, links: defaultLinks };
   }, [data]);
 
-  // Simulation physics objects
   const simNodesRef = useRef([]);
   const simLinksRef = useRef([]);
 
-  // Initialize node layout
+  // Initialize node layout with spread
   useEffect(() => {
     const width = 850;
     const height = 500;
@@ -91,12 +90,12 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       const risk = Number(node.risk_score) || 0.1;
       const isFlagged = Boolean(node.is_aml_flagged || risk >= 0.70);
       const color = risk >= 0.85 
-        ? '#ef4444' 
+        ? '#FF3B30' 
         : risk >= 0.70 
-        ? '#f97316' 
+        ? '#FF7A00' 
         : risk >= 0.40 
-        ? '#eab308' 
-        : '#10b981';
+        ? '#FFD400' 
+        : '#36C96F';
 
       const simNode = {
         ...node,
@@ -104,7 +103,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         y: isNaN(y) ? height / 2 : y,
         vx: 0,
         vy: 0,
-        radius: isFlagged ? 11 : 7,
+        radius: isFlagged ? 12 : 8,
         color,
         is_aml_flagged: isFlagged
       };
@@ -147,7 +146,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
     let animId = null;
     let particles = [];
-    for (let p = 0; p < 20; p++) {
+    for (let p = 0; p < 24; p++) {
       particles.push({
         linkIdx: p,
         progress: Math.random(),
@@ -162,9 +161,12 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
         ctx.clearRect(0, 0, width, height);
 
-        // Background subtle grid
+        // Technical Grid Background
         ctx.save();
-        ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+        ctx.fillStyle = '#0B0F19';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
         ctx.lineWidth = 1;
         const gridSize = 40;
         for (let gx = 0; gx < width; gx += gridSize) {
@@ -190,9 +192,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         const nodes = simNodesRef.current;
         const links = simLinksRef.current;
 
-        // Physics Simulation Step (Coulomb Repulsion + Hooke Springs)
+        // Zero-Flicker Physics Step
         if (nodes.length > 0) {
-          // 1. Universal Node-to-Node Coulomb Repulsion (Pushes all nodes apart)
+          // 1. Coulomb Repulsion
           for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
               const dx = nodes[j].x - nodes[i].x;
@@ -215,7 +217,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             }
           }
 
-          // 2. Hooke's Spring Law along Connected Edges (Pulls linked nodes together)
+          // 2. Hooke's Spring Law
           for (let k = 0; k < links.length; k++) {
             const link = links[k];
             const src = link.sourceNode;
@@ -238,7 +240,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             }
           }
 
-          // 3. Gentle Center Gravity & Velocity Damping (Zero-Flicker Stabilization)
+          // 3. Center Gravity & Velocity Damping
           for (let i = 0; i < nodes.length; i++) {
             if (draggingNodeId === nodes[i].id) continue;
             const node = nodes[i];
@@ -249,14 +251,12 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             node.vx *= 0.80;
             node.vy *= 0.80;
 
-            // Velocity deadzone threshold to eliminate micro-vibrations
             if (Math.abs(node.vx) < 0.02) node.vx = 0;
             if (Math.abs(node.vy) < 0.02) node.vy = 0;
 
             node.x += node.vx;
             node.y += node.vy;
 
-            // Smooth boundary containment (No random jumps)
             const margin = 45;
             if (isNaN(node.x) || node.x < margin) { node.x = margin; node.vx = 0; }
             if (node.x > width - margin) { node.x = width - margin; node.vx = 0; }
@@ -277,11 +277,11 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
           ctx.lineTo(tgt.x, tgt.y);
 
           if (link.is_suspicious) {
-            ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+            ctx.strokeStyle = '#FF3B30';
             ctx.lineWidth = 2.5;
             ctx.setLineDash([4, 3]);
           } else {
-            ctx.strokeStyle = 'rgba(100, 116, 139, 0.35)';
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
             ctx.lineWidth = 1.2;
             ctx.setLineDash([]);
           }
@@ -293,7 +293,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
           const arrowDist = 16;
           const ax = tgt.x - Math.cos(angle) * arrowDist;
           const ay = tgt.y - Math.sin(angle) * arrowDist;
-          ctx.fillStyle = link.is_suspicious ? '#ef4444' : '#64748b';
+          ctx.fillStyle = link.is_suspicious ? '#FF3B30' : '#94A3B8';
           ctx.beginPath();
           ctx.moveTo(ax, ay);
           ctx.lineTo(ax - 5 * Math.cos(angle - Math.PI / 6), ay - 5 * Math.sin(angle - Math.PI / 6));
@@ -317,9 +317,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
             ctx.beginPath();
             ctx.arc(px, py, link.is_suspicious ? 3.5 : 2, 0, 2 * Math.PI);
-            ctx.fillStyle = link.is_suspicious ? '#f87171' : '#38bdf8';
-            ctx.shadowColor = link.is_suspicious ? '#ef4444' : '#38bdf8';
-            ctx.shadowBlur = 8;
+            ctx.fillStyle = link.is_suspicious ? '#FF7A00' : '#00C2D7';
+            ctx.shadowColor = link.is_suspicious ? '#FF3B30' : '#00C2D7';
+            ctx.shadowBlur = 6;
             ctx.fill();
             ctx.shadowBlur = 0;
           });
@@ -331,11 +331,11 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
           const isHighlighted = selectedNode && selectedNode.id === node.id;
 
-          // Glowing Outer Halo for Suspicious or Selected Nodes
+          // Glowing Halo for Flagged/Selected Nodes
           if (node.is_aml_flagged || isHighlighted) {
             ctx.beginPath();
             ctx.arc(node.x, node.y, node.radius + (isHighlighted ? 9 : 5), 0, 2 * Math.PI);
-            ctx.fillStyle = node.is_aml_flagged ? 'rgba(239, 68, 68, 0.25)' : 'rgba(56, 189, 248, 0.3)';
+            ctx.fillStyle = node.is_aml_flagged ? 'rgba(255, 59, 48, 0.3)' : 'rgba(255, 212, 0, 0.35)';
             ctx.fill();
           }
 
@@ -343,19 +343,16 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
           ctx.fillStyle = node.color;
-          ctx.shadowColor = node.color;
-          ctx.shadowBlur = node.is_aml_flagged ? 12 : 3;
           ctx.fill();
-          ctx.shadowBlur = 0;
 
-          // Border Ring
-          ctx.strokeStyle = isHighlighted ? '#ffffff' : '#0f172a';
-          ctx.lineWidth = isHighlighted ? 2.5 : 1.5;
+          // Dark Ink Border
+          ctx.strokeStyle = isHighlighted ? '#FFFFFF' : '#111111';
+          ctx.lineWidth = isHighlighted ? 2.5 : 2;
           ctx.stroke();
 
-          // Node Text Label
-          ctx.font = '10px monospace';
-          ctx.fillStyle = isHighlighted ? '#ffffff' : '#94a3b8';
+          // Node Label
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = isHighlighted ? '#FFFFFF' : '#EAE5D8';
           ctx.textAlign = 'center';
           ctx.fillText(node.id, node.x, node.y + node.radius + 12);
         });
@@ -375,7 +372,6 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     };
   }, [panOffset, zoomLevel, filterRiskOnly, selectedNode, draggingNodeId]);
 
-  // Resize handler to match container dimensions
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current && canvasRef.current) {
@@ -389,7 +385,6 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Mouse drag & click handlers
   const handleMouseDown = (e) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -460,56 +455,56 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
   return (
     <div 
-      className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-slate-800 bg-[#070b14] flex flex-col shadow-inner" 
+      className="relative w-full h-[520px] rounded-[6px] overflow-hidden border-[3px] border-[#111111] shadow-[7px_7px_0_#111111] bg-[#0B0F19] flex flex-col" 
       ref={containerRef}
     >
       {/* Top HUD Ribbon */}
       <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300 shadow-lg">
-          <span className="flex items-center gap-1.5 font-semibold text-white">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Dynamic Graph Topology
+        <div className="flex items-center gap-2 pointer-events-auto bg-[#111111] text-[#FFFDF5] px-3 py-1.5 rounded-[4px] border-2 border-[#111111] shadow-[3px_3px_0_#000000] text-xs font-mono font-bold">
+          <span className="flex items-center gap-1.5 text-[#FFD400]">
+            <span className="h-2 w-2 rounded-full bg-[#FFD400]"></span>
+            CRIME TOPOLOGY
           </span>
-          <span className="text-slate-500">|</span>
-          <span>Nodes: <strong className="text-sky-400 font-mono">{simNodesRef.current.length}</strong></span>
-          <span>Edges: <strong className="text-indigo-400 font-mono">{simLinksRef.current.length}</strong></span>
+          <span className="text-[#5B5B55]">|</span>
+          <span>NODES: <strong className="text-[#00C2D7]">{simNodesRef.current.length}</strong></span>
+          <span>EDGES: <strong className="text-[#8B5CF6]">{simLinksRef.current.length}</strong></span>
         </div>
 
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 shadow-lg">
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-[#FFFDF5] p-1 rounded-[4px] border-2 border-[#111111] shadow-[3px_3px_0_#111111]">
           <button
             onClick={() => setFilterRiskOnly(!filterRiskOnly)}
-            className={`px-2.5 py-1 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors ${
+            className={`px-2.5 py-1 text-xs font-black rounded-[3px] border border-[#111111] flex items-center gap-1.5 transition-colors ${
               filterRiskOnly
-                ? 'bg-rose-500 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-[#FF3B30] text-white'
+                : 'bg-[#FFFDF5] text-[#111111] hover:bg-[#EAE5D8]'
             }`}
           >
             <Filter className="h-3 w-3" />
-            <span>High Risk Only</span>
+            <span>HIGH RISK ONLY</span>
           </button>
 
           <button
             onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.2))}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1 text-[#111111] hover:bg-[#EAE5D8] rounded border border-[#111111]"
             title="Zoom In"
           >
-            <ZoomIn className="h-4 w-4" />
+            <ZoomIn className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={() => setZoomLevel((z) => Math.max(0.4, z - 0.2))}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1 text-[#111111] hover:bg-[#EAE5D8] rounded border border-[#111111]"
             title="Zoom Out"
           >
-            <ZoomOut className="h-4 w-4" />
+            <ZoomOut className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={handleResetView}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1 text-[#111111] hover:bg-[#EAE5D8] rounded border border-[#111111]"
             title="Reset View"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -526,53 +521,53 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         onMouseLeave={handleMouseUp}
       />
 
-      {/* Selected Node Inspector HUD */}
+      {/* Selected Node Inspector HUD Drawer */}
       {selectedNode && (
-        <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:w-80 z-20 p-4 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700 shadow-2xl space-y-2.5">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:w-80 z-20 p-4 brutal-card bg-[#FFFDF5] shadow-[6px_6px_0_#111111] space-y-2.5">
+          <div className="flex items-center justify-between border-b-2 border-[#111111] pb-2">
             <div className="flex items-center gap-2">
               <div 
-                className="h-3 w-3 rounded-full" 
+                className="h-3.5 w-3.5 rounded-full border border-[#111111]" 
                 style={{ backgroundColor: selectedNode.color }}
               />
-              <h4 className="font-bold text-xs text-white font-mono">{selectedNode.id}</h4>
+              <h4 className="font-black text-xs text-[#111111] font-mono">{selectedNode.id}</h4>
             </div>
             <button
               onClick={() => setSelectedNode(null)}
-              className="text-slate-400 hover:text-white text-xs font-bold"
+              className="h-5 w-5 border border-[#111111] bg-[#FF3B30] text-white text-[10px] font-black rounded"
             >
               ✕
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
-              <span className="text-slate-400 block">Risk Score</span>
-              <span className="font-bold text-sm font-mono" style={{ color: selectedNode.color }}>
+            <div className="p-2 bg-[#EAE5D8] border border-[#111111] rounded">
+              <span className="text-[#5B5B55] font-bold block text-[10px] uppercase">Risk Score</span>
+              <span className="font-black text-base font-mono" style={{ color: selectedNode.color }}>
                 {(selectedNode.risk_score * 100).toFixed(1)}%
               </span>
             </div>
 
-            <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
-              <span className="text-slate-400 block">AML Status</span>
-              <span className={`font-semibold ${selectedNode.is_aml_flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
+            <div className="p-2 bg-[#EAE5D8] border border-[#111111] rounded">
+              <span className="text-[#5B5B55] font-bold block text-[10px] uppercase">AML Status</span>
+              <span className={`font-black text-xs font-mono ${selectedNode.is_aml_flagged ? 'text-[#FF3B30]' : 'text-[#36C96F]'}`}>
                 {selectedNode.is_aml_flagged ? 'SUSPICIOUS' : 'NORMAL'}
               </span>
             </div>
           </div>
 
-          <div className="text-[11px] space-y-1 text-slate-300 pt-1">
+          <div className="text-[11px] space-y-1 text-[#111111] font-mono pt-1">
             <div className="flex justify-between">
-              <span className="text-slate-400">Account Type:</span>
-              <span className="font-medium text-slate-200">{selectedNode.type}</span>
+              <span className="text-[#5B5B55]">Type:</span>
+              <span className="font-bold">{selectedNode.type}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Fan-In / Fan-Out:</span>
-              <span className="font-mono text-sky-400">{selectedNode.fan_in || 2} in / {selectedNode.fan_out || 3} out</span>
+              <span className="text-[#5B5B55]">Fan-In/Out:</span>
+              <span className="font-bold text-[#4D7CFE]">{selectedNode.fan_in || 2} in / {selectedNode.fan_out || 3} out</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Total Volume:</span>
-              <span className="font-mono text-emerald-400 font-semibold">
+              <span className="text-[#5B5B55]">Volume:</span>
+              <span className="font-bold text-[#111111]">
                 Rs. {(selectedNode.volume_inr || 450000).toLocaleString('en-IN')}
               </span>
             </div>
@@ -581,11 +576,11 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       )}
 
       {/* Legend Footer */}
-      <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-3 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 pointer-events-none">
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500"></span> Critical (≥85%)</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-orange-500"></span> High (≥70%)</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500"></span> Medium (≥40%)</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500"></span> Normal</span>
+      <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-2 bg-[#111111] text-[#FFFDF5] px-3 py-1.5 rounded-[4px] border-2 border-[#111111] text-[10px] font-mono font-bold pointer-events-none">
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#FF3B30]"></span> CRITICAL (≥85%)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#FF7A00]"></span> HIGH (≥70%)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#FFD400]"></span> MEDIUM (≥40%)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#36C96F]"></span> NORMAL</span>
       </div>
     </div>
   );
