@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import { 
   ShieldCheck, 
-  Layers, 
-  PlaySquare, 
-  FlaskConical, 
-  Network, 
-  FileText, 
-  Activity, 
   Settings, 
   ExternalLink, 
   ChevronRight,
-  Server,
-  User,
-  Radio,
-  CheckCircle2
+  Server
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -27,43 +18,37 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
       id: 'overview', 
       num: '01', 
       label: '8-Stage Pipeline', 
-      desc: 'Architecture & Stream Lifecycle',
-      icon: Layers 
+      desc: 'Architecture & Stream Lifecycle'
     },
     { 
       id: 'simulator', 
       num: '02', 
       label: 'Batch AML Simulator', 
-      desc: 'Live Multi-Rail Stream Sim',
-      icon: PlaySquare 
+      desc: 'Live Multi-Rail Stream Sim'
     },
     { 
       id: 'single_test', 
       num: '03', 
       label: 'Single Transaction Tester', 
-      desc: 'Isolated Forensics & Presets',
-      icon: FlaskConical 
+      desc: 'Isolated Forensics & Presets'
     },
     { 
       id: 'topology', 
       num: '04', 
       label: 'Network Graph Topology', 
-      desc: 'Multi-Hop Crime Ring Explorer',
-      icon: Network 
+      desc: 'Multi-Hop Crime Ring Explorer'
     },
     { 
       id: 'alerts', 
       num: '05', 
       label: 'Alerts & SAR Desk', 
-      desc: 'FIU-IND Compliance Triage',
-      icon: FileText 
+      desc: 'FIU-IND Compliance Triage'
     },
     { 
       id: 'mlops', 
       num: '06', 
       label: 'MLOps & Drift Monitor', 
-      desc: 'KS Tests & PSI Governance',
-      icon: Activity 
+      desc: 'KS Tests & PSI Governance'
     },
   ];
 
@@ -100,19 +85,14 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
         {/* Top Header / Brand Logo */}
         <div>
           <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between bg-white">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-[#164E8A] flex items-center justify-center text-white shadow-xs">
-                <ShieldCheck className="h-5 w-5" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-slate-900 text-base tracking-tight">GNN AML</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                  v1.0.5
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-slate-900 text-sm tracking-tight">GNN AML</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                    v1.0.5
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-600 font-medium">Enterprise Banking</p>
-              </div>
+              <p className="text-[11px] text-slate-500 font-medium tracking-tight">Financial Crime Intelligence</p>
             </div>
 
             <button 
@@ -123,14 +103,13 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
             </button>
           </div>
 
-          {/* Navigation Links */}
+          {/* Clean Minimal Navigation Links (No Icons, No Clumsy Border Lines) */}
           <div className="px-3 py-4 space-y-1">
-            <div className="px-3 pb-2 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-              Core Modules
+            <div className="px-3 pb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              Navigation Modules
             </div>
 
             {navItems.map((item) => {
-              const Icon = item.icon;
               const isActive = activeTab === item.id;
 
               return (
@@ -140,19 +119,18 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
                     setActiveTab(item.id);
                     if (window.innerWidth < 768) setIsOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-left transition-all ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 font-semibold border-l-3 border-blue-600 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-blue-50/90 text-blue-700 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-mono font-bold ${isActive ? 'text-blue-600' : 'text-slate-500'}`}>
+                    <span className={`text-[11px] font-mono font-bold ${isActive ? 'text-blue-700' : 'text-slate-500'}`}>
                       {item.num}
                     </span>
-                    <Icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
                     <div>
-                      <div className="text-xs font-medium leading-none">{item.label}</div>
+                      <div className="text-xs font-semibold leading-tight">{item.label}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5 leading-none">{item.desc}</div>
                     </div>
                   </div>
@@ -164,7 +142,7 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
         </div>
 
         {/* Bottom Section: Telemetry, API Settings & User Profile */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50/50 space-y-3">
+        <div className="p-4 border-t border-slate-200 bg-slate-50/60 space-y-3">
           {/* Status Badge */}
           <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-2">
@@ -216,7 +194,7 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold text-slate-800 truncate">Compliance Officer</div>
-              <div className="text-[10px] text-slate-600 truncate">Tier-1 FIU Clearance</div>
+              <div className="text-[10px] text-slate-500 truncate">Tier-1 FIU Clearance</div>
             </div>
           </div>
         </div>

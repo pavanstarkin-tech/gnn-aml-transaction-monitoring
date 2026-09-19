@@ -231,7 +231,6 @@ elif risk_score >= 0.70:
         {/* 8-Stage Interactive Stage Grid */}
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           {stages.map((stage, idx) => {
-            const Icon = stage.icon;
             const isSelected = selectedStage === idx;
             const isCurrentAnim = activeStepAnim === idx && isPlaying;
 
@@ -244,7 +243,7 @@ elif risk_score >= 0.70:
                 }}
                 className={`relative text-left p-3 rounded-lg border transition-all flex flex-col justify-between h-32 ${
                   isSelected
-                    ? 'bg-blue-50/80 border-blue-500 shadow-xs ring-1 ring-blue-500/30'
+                    ? 'bg-blue-50/90 border-blue-500 shadow-xs ring-1 ring-blue-500/30'
                     : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/70'
                 }`}
               >
@@ -254,11 +253,13 @@ elif risk_score >= 0.70:
                 )}
 
                 <div className="flex items-center justify-between w-full">
-                  <div className={`h-7 w-7 rounded-md ${stage.color} flex items-center justify-center shadow-2xs`}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <span className={`text-[11px] font-mono font-bold ${isSelected ? 'text-blue-700' : 'text-slate-400'}`}>
+                  <span className={`h-6 w-6 rounded-md font-mono text-[11px] font-bold flex items-center justify-center ${
+                    isSelected ? 'bg-[#164E8A] text-white shadow-2xs' : 'bg-slate-100 text-slate-700'
+                  }`}>
                     0{stage.id}
+                  </span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                    {stage.badge}
                   </span>
                 </div>
 
@@ -267,7 +268,7 @@ elif risk_score >= 0.70:
                     {stage.title.split(":")[1] || stage.title}
                   </h4>
                   <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                    {stage.badge}
+                    {stage.subtitle}
                   </p>
                 </div>
 
@@ -287,9 +288,9 @@ elif risk_score >= 0.70:
         <div className="lg:col-span-7 fintech-card p-6 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-lg ${activeStage.color} flex items-center justify-center shadow-2xs`}>
-                <activeStage.icon className="h-5 w-5" />
-              </div>
+              <span className="h-9 w-9 rounded-md bg-[#164E8A] text-white font-mono font-bold text-sm flex items-center justify-center shadow-2xs">
+                0{activeStage.id}
+              </span>
               <div>
                 <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
                   {activeStage.subtitle}
