@@ -25,6 +25,10 @@ export function Header({ activeTab, onToggleSidebar, systemStatus }) {
     mlops: {
       title: "MLOps Continuous Drift & Model Governance",
       subtitle: "Kolmogorov-Smirnov statistical tests, Population Stability Index (PSI), and auto-retraining."
+    },
+    benchmark: {
+      title: "Comparative Benchmark Evaluation (Existing vs Our GNN)",
+      subtitle: "Empirical performance charts, 93% false positive reduction, and structural capability matrix."
     }
   };
 

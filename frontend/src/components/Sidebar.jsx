@@ -43,6 +43,12 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
       label: 'MLOps & Drift Monitor', 
       desc: 'KS Tests & PSI Governance'
     },
+    { 
+      id: 'benchmark', 
+      num: '07', 
+      label: 'Benchmark Comparison', 
+      desc: 'Existing AML vs Our Project'
+    }
   ];
 
   const handleSaveConfig = (e) => {

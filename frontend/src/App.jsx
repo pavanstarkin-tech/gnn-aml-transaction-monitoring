@@ -7,6 +7,7 @@ import { SingleTransactionTester } from './components/SingleTransactionTester';
 import { TopologyExplorer } from './components/TopologyExplorer';
 import { AlertsAndSarDesk } from './components/AlertsAndSarDesk';
 import { MlopsMonitor } from './components/MlopsMonitor';
+import { BenchmarkComparison } from './components/BenchmarkComparison';
 import { api } from './services/api';
 
 
@@ -76,6 +77,10 @@ export default function App() {
 
           {activeTab === 'mlops' && (
             <MlopsMonitor />
+          )}
+
+          {activeTab === 'benchmark' && (
+            <BenchmarkComparison />
           )}
         </main>
 
