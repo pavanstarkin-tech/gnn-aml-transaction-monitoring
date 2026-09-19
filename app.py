@@ -13,14 +13,16 @@ import uvicorn
 # ZeroGPU Compatibility for Hugging Face Spaces
 try:
     import spaces
-    gpu_decorator = spaces.GPU
 except Exception:
-    def gpu_decorator(fn=None, **kwargs):
-        if fn is not None:
-            return fn
-        def wrapper(f):
-            return f
-        return wrapper
+    class spaces:
+        @staticmethod
+        def GPU(fn=None, **kwargs):
+            if fn is not None:
+                return fn
+            def wrapper(f):
+                return f
+            return wrapper
+
 
 # Import modular pipeline components
 from src.data_generator import AMLDataGenerator
@@ -126,6 +128,7 @@ def get_stats():
     }
 
 @api.post("/api/v1/transactions/score")
+@spaces.GPU
 def score_transaction_api(req: SingleTransactionRequest):
     tx = {
         "transaction_id": f"TX_{int(time.time() * 1000) % 1000000}",
@@ -165,6 +168,7 @@ def score_transaction_api(req: SingleTransactionRequest):
     }
 
 @api.post("/api/v1/pipeline/simulate")
+@spaces.GPU
 def simulate_pipeline_api(req: SimulationRequest):
     start_time = time.time()
     count = max(10, min(int(req.volume), 200))
@@ -552,7 +556,7 @@ def update_interactive_stage_view(stage_num):
 # STEP-BY-STEP LIVE TRACE ENGINE
 # -------------------------------------------------------------
 
-@gpu_decorator
+@spaces.GPU
 def execute_live_trace_flow(scenario_type: str):
     if scenario_type == "Circular Laundering Ring":
         tx = {
@@ -656,7 +660,7 @@ def execute_live_trace_flow(scenario_type: str):
 # PIPELINE SIMULATOR HANDLER
 # -------------------------------------------------------------
 
-@gpu_decorator
+@spaces.GPU
 def run_pipeline_simulation(volume: float, pattern_mode: str):
     start_time = time.time()
     count = max(10, min(int(volume), 200))
@@ -738,7 +742,7 @@ def run_pipeline_simulation(volume: float, pattern_mode: str):
     return kpi_html, summary_msg, sample_df, fig, alerts_df
 
 
-@gpu_decorator
+@spaces.GPU
 def process_single_interactive(sender, receiver, amount, tx_type, channel, country):
     tx = {
         "transaction_id": f"TX_{int(time.time() * 1000) % 1000000}",
@@ -845,6 +849,7 @@ def update_alert_decision(alert_id: str, new_status: str, notes: str):
     return msg, alerts_df
 
 
+@spaces.GPU
 def run_mlops_monitoring():
     drift_res = mlops.check_drift()
     perf_res = mlops.evaluate_performance()
@@ -864,7 +869,7 @@ def run_mlops_monitoring():
     return summary_md, registry_df
 
 
-@gpu_decorator
+@spaces.GPU
 def execute_auto_retraining():
     new_model = mlops.trigger_retraining(gnn_manager, tx_graph, processor, data_gen)
     msg = f"""
