@@ -43,7 +43,7 @@ export function BatchSimulator() {
     }
   };
 
-  const summary = simulationData ? simulationData.summary : {
+  const summary = simulationData?.summary || {
     total_transactions: numTxns,
     critical_alerts: 12,
     high_risk: 8,
@@ -52,6 +52,7 @@ export function BatchSimulator() {
     total_flagged_inr: 8950000,
     detection_rate_pct: 95.4
   };
+
 
   const filteredTxns = (simulationData?.transactions || []).filter((txn) => {
     const matchesFilter = filterRisk === 'ALL' || txn.risk_level === filterRisk;
