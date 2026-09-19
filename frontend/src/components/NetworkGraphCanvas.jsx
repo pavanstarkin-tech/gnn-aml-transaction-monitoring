@@ -463,14 +463,26 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             ctx.stroke();
           }
 
-          // Crisp Node Text Labels
+          // Crisp Node Text Labels (Compact Last 3 Digits)
+          const getShortLabel = (id) => {
+            if (!id) return '';
+            const match = id.match(/\d+/g);
+            if (match && match.length > 0) {
+              const lastGroup = match[match.length - 1];
+              return lastGroup.length >= 3 ? lastGroup.slice(-3) : lastGroup.padStart(3, '0');
+            }
+            return id.slice(-3);
+          };
+
+          const shortLabel = getShortLabel(node.id);
+
           if (isSelected) {
-            const labelText = node.id;
+            const labelText = `#${shortLabel} (${node.id})`;
             ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
             const textMetrics = ctx.measureText(labelText);
             const textWidth = textMetrics.width;
 
-            // White badge background
+            // White badge background with high contrast border
             ctx.fillStyle = '#FFFFFF';
             ctx.strokeStyle = '#0F172A';
             ctx.lineWidth = 1.5;
@@ -486,9 +498,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             ctx.fillText(labelText, node.x, pillY + 13);
           } else {
             ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillStyle = '#1E293B';
+            ctx.fillStyle = node.is_aml_flagged ? '#DC2626' : '#1E293B';
             ctx.textAlign = 'center';
-            ctx.fillText(node.id, node.x, node.y + currentRadius + 12);
+            ctx.fillText(shortLabel, node.x, node.y + currentRadius + 11);
           }
         });
 
