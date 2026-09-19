@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  Layers, 
   ArrowRight, 
   Play, 
   RotateCcw, 
@@ -12,8 +13,7 @@ import {
   FileText, 
   Activity,
   Zap,
-  Terminal,
-  Layers
+  Code
 } from 'lucide-react';
 
 export function ArchitecturePipeline({ onNavigateToSimulator }) {
@@ -23,31 +23,31 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
 
   const stages = [
     {
-      id: "01",
-      title: "INGESTION GATEWAY",
-      subtitle: "Multi-Rail Financial Stream",
+      id: 1,
+      title: "Stage 1: Ingestion Gateway",
+      subtitle: "Multi-Rail Transaction Streaming",
       icon: Database,
-      badge: "STREAMING INGESTION",
-      accentBg: "bg-[#FFD400]",
-      description: "Ingests raw financial events across NEFT, RTGS, IMPS, UPI, and Wire Transfers with schema validation and sub-millisecond throughput in Indian Rupees (INR).",
-      inputs: ["Transaction ID & Millisecond Timestamp", "Sender & Receiver Account IDs", "Monetary Amount in INR", "Channel (UPI, IMPS, NEFT, RTGS) & Device Metadata"],
-      processing: "Apache Kafka event queue with distributed schema validator, null mitigation, and sliding de-duplication window.",
+      badge: "Stream Layer",
+      color: "bg-blue-600 text-white",
+      description: "Ingests high-throughput real-time financial events across NEFT, RTGS, IMPS, UPI, and Wire Transfers with schema validation and sub-millisecond latency.",
+      inputs: ["Transaction ID, Timestamp", "Sender & Receiver Account IDs", "Amount in INR", "Channel & Device Metadata"],
+      processing: "Apache Kafka / Redis event queue with distributed schema validator and sliding deduplication window.",
       outputs: ["Validated Ingestion Payload Stream", "Kafka Partition Offsets"],
-      complexity: "O(1) Streaming Latency < 2ms",
+      complexity: "O(1) streaming latency < 2ms",
       codeSnippet: `def ingest_event(payload: dict) -> TransactionEvent:
     validated = schema.validate(payload)
     return stream_publisher.publish("aml_raw_events", validated)`
     },
     {
-      id: "02",
-      title: "FEATURE ENGINEERING",
+      id: 2,
+      title: "Stage 2: Feature Engineering",
       subtitle: "Velocity & Topological Profiling",
       icon: Cpu,
-      badge: "TEMPORAL PROFILING",
-      accentBg: "bg-[#00C2D7]",
+      badge: "Stateful Aggregator",
+      color: "bg-teal-600 text-white",
       description: "Computes 1-hour and 24-hour temporal velocity, fan-in/fan-out ratios, structuring threshold proximity, and sudden behavioral volume spikes.",
-      inputs: ["Validated Ingestion Stream", "Historical Account State (30-Day Window)"],
-      processing: "Sliding window accumulators calculate fan_out_ratio, burst_velocity_1h, amount_log_norm, and account retention balance.",
+      inputs: ["Validated Ingestion Stream", "Historical Account State (30-day window)"],
+      processing: "Sliding window accumulators calculate fan_out_ratio, burst_velocity_1h, amount_std_dev.",
       outputs: ["16-Dimensional Dense Feature Vector per Node/Transaction"],
       complexity: "O(k) where k = active window events",
       codeSnippet: `def extract_temporal_features(acc_id: str, window_hours=24):
@@ -55,15 +55,15 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
     return compute_velocity_ratios(txns)`
     },
     {
-      id: "03",
-      title: "GRAPH CONSTRUCTION",
-      subtitle: "Dynamic MultiGraph Network",
+      id: 3,
+      title: "Stage 3: Graph Construction",
+      subtitle: "Dynamic Heterogeneous Network",
       icon: Network,
-      badge: "PYTORCH GEOMETRIC",
-      accentBg: "bg-[#36C96F]",
+      badge: "PyTorch Geometric",
+      color: "bg-emerald-600 text-white",
       description: "Transforms isolated transactions into a dynamic graph where Accounts are Nodes and Transactions form Directed Weighted Edges.",
-      inputs: ["Node Feature Vectors", "Source-Target Edge Index Tuples", "Edge Attributes (INR Amount, Channel, Timestamps)"],
-      processing: "PyTorch Geometric Data object construction with dynamic adjacency matrix updates and cycle detection.",
+      inputs: ["Node Feature Vectors", "Source-Target Edge Index Tuples", "Edge Attributes (Amount, Timestamps)"],
+      processing: "PyTorch Geometric Data object construction with dynamic adjacency matrix updater.",
       outputs: ["PyG Data(x=[N, 16], edge_index=[2, E], edge_attr=[E, 4])"],
       complexity: "Sparse CSR Graph Representation",
       codeSnippet: `data = Data(
@@ -73,12 +73,12 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
 )`
     },
     {
-      id: "04",
-      title: "GRAPHSAGE CONVOLUTION",
+      id: 4,
+      title: "Stage 4: 2-Layer GraphSAGE",
       subtitle: "Relational Neighborhood Aggregation",
       icon: GitBranch,
-      badge: "INDUCTIVE GNN",
-      accentBg: "bg-[#4D7CFE]",
+      badge: "Inductive GNN",
+      color: "bg-indigo-600 text-white",
       description: "Aggregates multi-hop structural topology across neighboring accounts. Detects indirect laundering paths, mule rings, and shell proxies.",
       inputs: ["Heterogeneous Graph Adjacency", "Initial Node Embeddings h_v^(0)"],
       processing: "Mean Aggregation -> Linear Projection (64 dims) -> LayerNorm -> LeakyReLU -> Dropout(0.3) -> 2nd Hop Aggregation.",
@@ -92,12 +92,12 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
         return torch.sigmoid(self.classifier(h2))`
     },
     {
-      id: "05",
-      title: "RISK SCORING ENGINE",
-      subtitle: "Calibrated Probability Output",
+      id: 5,
+      title: "Stage 5: Risk Scoring Engine",
+      subtitle: "Multi-Head Inference Output",
       icon: Zap,
-      badge: "INFERENCE < 3.4MS",
-      accentBg: "bg-[#FF7A00]",
+      badge: "Inference 3.4ms",
+      color: "bg-blue-700 text-white",
       description: "Calculates calibrated risk probability score P(Laundering) between 0.000 and 1.000 along with confidence intervals and explainability impacts.",
       inputs: ["GraphSAGE Node Embeddings", "Transaction Risk Classifiers"],
       processing: "Sigmoidal classifier projection with Integrated Gradients for feature attribution breakdown.",
@@ -107,15 +107,15 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
 explanations = integrated_gradients.attribute(model, inputs=graph_batch)`
     },
     {
-      id: "06",
-      title: "POLICY RULE GATE",
+      id: 6,
+      title: "Stage 6: Policy Rule Gate",
       subtitle: "Compliance Tier Routing",
       icon: ShieldAlert,
-      badge: "REGULATORY GATE",
-      accentBg: "bg-[#FF3B30]",
-      description: "Maps calculated risk score against strict regulatory thresholds: Auto-Pass (<0.40), Human Review (0.40-0.69), SAR Investigation (0.70-0.84), Auto-Block (>=0.85).",
+      badge: "Regulatory Gate",
+      color: "bg-rose-600 text-white",
+      description: "Maps calculated risk score against strict regulatory thresholds (Auto-Pass, Human Review, SAR Investigation, Auto-Block).",
       inputs: ["Calibrated Risk Probability", "Custom Enterprise Policy Rules"],
-      processing: "Zero False-Negative Policy Gate mapping scores to automated execution webhooks.",
+      processing: "Threshold Engine: <0.40: AUTO_PASS | 0.40-0.69: HUMAN_REVIEW | 0.70-0.84: SAR_INVESTIGATION | >=0.85: AUTO_BLOCK.",
       outputs: ["Compliance Triage Directive", "Automated Webhook / API Dispatch"],
       complexity: "Zero False-Negative Safety Guardrails",
       codeSnippet: `if risk_score >= 0.85:
@@ -124,16 +124,16 @@ elif risk_score >= 0.70:
     action = ComplianceAction.SAR_INVESTIGATION`
     },
     {
-      id: "07",
-      title: "SAR GENERATION",
+      id: 7,
+      title: "Stage 7: SAR Generation",
       subtitle: "FIU STR / SAR Document Filing",
       icon: FileText,
-      badge: "FIU-IND COMPLIANT",
-      accentBg: "bg-[#FF4FA3]",
+      badge: "FIU-IND Ready",
+      color: "bg-amber-600 text-white",
       description: "Automatically compiles complete audit dossiers containing transaction chains, topological subgraphs, account KYC flags, and legal narrative.",
       inputs: ["Triaged High-Risk Alert", "Sub-Graph Topology Trace", "Account KYC Profiles"],
       processing: "Automated SAR Compiler formats regulatory filing JSON and printable STR dossier conforming to FIU standards.",
-      outputs: ["Official SAR Audit Dossier", "Sub-Graph Evidence Snapshot"],
+      outputs: ["Official SAR Audit Dossier", "Sub-Graph Cytoscape Snapshot"],
       complexity: "Complete Chain of Custody Audit Trail",
       codeSnippet: `def generate_sar_report(alert: Alert) -> SARDossier:
     return SARDossier(
@@ -143,12 +143,12 @@ elif risk_score >= 0.70:
     )`
     },
     {
-      id: "08",
-      title: "MLOPS DRIFT MONITOR",
+      id: 8,
+      title: "Stage 8: MLOps Drift Monitor",
       subtitle: "Continuous KS & PSI Monitoring",
       icon: Activity,
-      badge: "ACTIVE DEFENSE",
-      accentBg: "bg-[#8B5CF6]",
+      badge: "Continuous Defense",
+      color: "bg-slate-800 text-white",
       description: "Continuously tracks concept drift, feature distribution shifts using Kolmogorov-Smirnov (KS) tests and Population Stability Index (PSI).",
       inputs: ["Production Scoring Distribution", "Baseline Validation Dataset"],
       processing: "KS-Test statistic evaluation on amounts/velocity; PSI score computed across risk bins. Triggers automatic retrain when PSI > 0.2.",
@@ -161,6 +161,7 @@ elif risk_score >= 0.70:
     }
   ];
 
+  // Auto-play interactive animation across stages
   useEffect(() => {
     let interval = null;
     if (isPlaying) {
@@ -170,7 +171,7 @@ elif risk_score >= 0.70:
           setSelectedStage(next);
           return next;
         });
-      }, 2400);
+      }, 2500);
     }
     return () => clearInterval(interval);
   }, [isPlaying]);
@@ -179,53 +180,56 @@ elif risk_score >= 0.70:
 
   return (
     <div className="space-y-6">
-      {/* Header & Controls Card */}
-      <div className="brutal-card-lg bg-[#FFFDF5] p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-[3px] border-[#111111] pb-5">
+      {/* Top Banner & Simulation Controls */}
+      <div className="fintech-card p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-[#FFD400] border-2 border-[#111111]"></span>
-              <h2 className="text-2xl font-black text-[#111111] tracking-tight uppercase">
-                8-STAGE AML INTELLIGENCE PIPELINE
+              <span className="h-2 w-2 rounded-full bg-blue-600"></span>
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                8-Stage AML Intelligence Pipeline
               </h2>
             </div>
-            <p className="text-xs text-[#5B5B55] font-bold uppercase tracking-wider mt-1">
-              FROM RAW TRANSACTION STREAMS TO REGULATORY ACTION
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
+              End-to-end intelligence lifecycle: from multi-rail banking stream ingestion to inductive GraphSAGE neighborhood convolutions, automated SAR regulatory dossiers, and continuous MLOps drift checks.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setIsPlaying(!isPlaying)}
-              className={`brutal-btn px-4 py-2.5 text-xs ${
-                isPlaying ? 'bg-[#FF3B30] text-white' : 'bg-[#FFD400]'
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition-all ${
+                isPlaying
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                  : 'bg-[#164E8A] hover:bg-blue-700 text-white'
               }`}
             >
               {isPlaying ? (
                 <>
-                  <RotateCcw className="h-4 w-4 mr-1.5 animate-spin" />
-                  <span>PAUSE STREAM FLOW</span>
+                  <RotateCcw className="h-3.5 w-3.5 animate-spin" />
+                  <span>Pause Stream Flow</span>
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 mr-1.5 fill-current" />
-                  <span>AUTO-SIMULATE PIPELINE</span>
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Auto-Simulate Pipeline</span>
                 </>
               )}
             </button>
 
             <button
               onClick={onNavigateToSimulator}
-              className="brutal-btn-alt px-4 py-2.5 text-xs flex items-center gap-1.5"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors shadow-2xs"
             >
-              <Zap className="h-4 w-4 text-[#FF7A00]" />
-              <span>OPEN BATCH SIMULATOR →</span>
+              <Zap className="h-3.5 w-3.5 text-blue-600" />
+              <span>Open Batch Simulator</span>
+              <ArrowRight className="h-3 w-3" />
             </button>
           </div>
         </div>
 
-        {/* 8-Stage Numbered Blocks Grid */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        {/* 8-Stage Interactive Stage Grid */}
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           {stages.map((stage, idx) => {
             const Icon = stage.icon;
             const isSelected = selectedStage === idx;
@@ -238,37 +242,38 @@ elif risk_score >= 0.70:
                   setSelectedStage(idx);
                   setActiveStepAnim(idx);
                 }}
-                className={`relative text-left p-3 border-[3px] border-[#111111] rounded-[6px] transition-all flex flex-col justify-between h-36 ${
+                className={`relative text-left p-3 rounded-lg border transition-all flex flex-col justify-between h-32 ${
                   isSelected
-                    ? `${stage.accentBg} text-[#111111] shadow-[5px_5px_0_#111111] translate-x-[-2px] translate-y-[-2px]`
-                    : 'bg-[#FFFDF5] text-[#111111] hover:bg-[#EAE5D8] shadow-[3px_3px_0_#111111]'
+                    ? 'bg-blue-50/80 border-blue-500 shadow-xs ring-1 ring-blue-500/30'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/70'
                 }`}
               >
+                {/* Active Indicator Line */}
                 {isCurrentAnim && (
-                  <span className="absolute -top-1.5 left-0 right-0 h-1.5 bg-[#FF3B30] border-t-2 border-[#111111] animate-pulse"></span>
+                  <span className="absolute -top-0.5 left-0 right-0 h-1 bg-blue-600 rounded-full animate-pulse"></span>
                 )}
 
                 <div className="flex items-center justify-between w-full">
-                  <div className="h-7 w-7 bg-[#111111] text-white rounded-[4px] flex items-center justify-center">
+                  <div className={`h-7 w-7 rounded-md ${stage.color} flex items-center justify-center shadow-2xs`}>
                     <Icon className="h-4 w-4" />
                   </div>
-                  <span className="font-mono text-xs font-black">
-                    {stage.id}
+                  <span className={`text-[11px] font-mono font-bold ${isSelected ? 'text-blue-700' : 'text-slate-400'}`}>
+                    0{stage.id}
                   </span>
                 </div>
 
-                <div className="my-1">
-                  <h4 className="text-[11px] font-black leading-tight uppercase">
-                    {stage.title}
+                <div className="mt-2">
+                  <h4 className="text-xs font-bold text-slate-900 line-clamp-1">
+                    {stage.title.split(":")[1] || stage.title}
                   </h4>
-                  <span className="text-[9px] font-bold text-[#5B5B55] uppercase block mt-0.5">
+                  <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
                     {stage.badge}
-                  </span>
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-1 text-[10px] font-black font-mono">
-                  <span>INSPECT</span>
-                  <ArrowRight className="h-3 w-3" />
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-700 mt-1">
+                  <span>Inspect</span>
+                  <ArrowRight className="h-2.5 w-2.5" />
                 </div>
               </button>
             );
@@ -276,70 +281,68 @@ elif risk_score >= 0.70:
         </div>
       </div>
 
-      {/* Stage Specification Deep Dive Panel */}
+      {/* Stage Detail Deep Dive Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Input -> Algorithm -> Output (7 Cols) */}
-        <div className="lg:col-span-7 brutal-card-lg bg-[#FFFDF5] p-6 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b-[3px] border-[#111111] pb-4">
+        {/* Left Column (7 Cols): Specifications & Transformation */}
+        <div className="lg:col-span-7 fintech-card p-6 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
-              <div className={`h-10 w-10 ${activeStage.accentBg} border-2 border-[#111111] shadow-[3px_3px_0_#111111] rounded-[5px] flex items-center justify-center`}>
-                <activeStage.icon className="h-5 w-5 text-[#111111]" />
+              <div className={`h-10 w-10 rounded-lg ${activeStage.color} flex items-center justify-center shadow-2xs`}>
+                <activeStage.icon className="h-5 w-5" />
               </div>
               <div>
-                <span className="text-[10px] font-mono font-black text-[#5B5B55] uppercase tracking-wider">
-                  STAGE {activeStage.id} // {activeStage.subtitle}
+                <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                  {activeStage.subtitle}
                 </span>
-                <h3 className="text-lg font-black text-[#111111] uppercase">{activeStage.title}</h3>
+                <h3 className="text-base font-bold text-slate-900">{activeStage.title}</h3>
               </div>
             </div>
 
-            <span className="brutal-badge bg-[#FFD400] text-[#111111]">
+            <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 font-mono">
               {activeStage.badge}
             </span>
           </div>
 
-          <p className="text-xs text-[#111111] font-semibold leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
             {activeStage.description}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Input Streams */}
-            <div className="p-3 bg-[#EAE5D8] border-2 border-[#111111] rounded-[5px] space-y-1.5">
-              <h5 className="text-[10px] font-black uppercase text-[#111111] flex items-center gap-1">
-                <Database className="h-3 w-3 text-[#4D7CFE]" />
-                INPUT STREAMS
+          {/* Breakdown Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Database className="h-3.5 w-3.5 text-blue-600" />
+                Input Streams
               </h5>
-              <ul className="space-y-1 text-[11px] font-medium text-[#111111]">
+              <ul className="space-y-1.5 text-xs text-slate-600">
                 {activeStage.inputs.map((inp, i) => (
-                  <li key={i} className="flex items-start gap-1">
-                    <span className="font-bold">•</span>
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-blue-500 font-bold">•</span>
                     <span>{inp}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Algorithm & Processing */}
-            <div className="p-3 bg-[#EAE5D8] border-2 border-[#111111] rounded-[5px] space-y-1.5">
-              <h5 className="text-[10px] font-black uppercase text-[#111111] flex items-center gap-1">
-                <Cpu className="h-3 w-3 text-[#00C2D7]" />
-                PROCESSING CORE
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Cpu className="h-3.5 w-3.5 text-teal-600" />
+                Processing Logic
               </h5>
-              <p className="text-[11px] font-medium text-[#111111] leading-relaxed">
+              <p className="text-xs text-slate-600 leading-relaxed">
                 {activeStage.processing}
               </p>
             </div>
 
-            {/* Output Artifacts */}
-            <div className="p-3 bg-[#EAE5D8] border-2 border-[#111111] rounded-[5px] space-y-1.5">
-              <h5 className="text-[10px] font-black uppercase text-[#111111] flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-[#36C96F]" />
-                OUTPUT ARTIFACTS
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                Output Artifacts
               </h5>
-              <ul className="space-y-1 text-[11px] font-medium text-[#111111]">
+              <ul className="space-y-1.5 text-xs text-slate-600">
                 {activeStage.outputs.map((out, i) => (
-                  <li key={i} className="flex items-start gap-1">
-                    <span className="font-bold text-[#36C96F]">•</span>
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-emerald-600 font-bold">•</span>
                     <span>{out}</span>
                   </li>
                 ))}
@@ -347,48 +350,50 @@ elif risk_score >= 0.70:
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-[#111111] text-[#FFFDF5] border-2 border-[#111111] rounded-[5px] text-xs font-mono">
-            <span className="text-[#EAE5D8]">BENCHMARK COMPLEXITY:</span>
-            <span className="text-[#FFD400] font-black">{activeStage.complexity}</span>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+            <span className="text-slate-600 font-medium">Computational Benchmark:</span>
+            <span className="font-mono text-emerald-700 font-bold">
+              {activeStage.complexity}
+            </span>
           </div>
         </div>
 
-        {/* Right Column: Code Implementation Terminal (5 Cols) */}
-        <div className="lg:col-span-5 brutal-card-lg bg-[#111111] text-[#FFFDF5] p-6 flex flex-col justify-between border-[3px] border-[#111111] shadow-[8px_8px_0_#111111]">
+        {/* Right Column (5 Cols): Light Code Editor */}
+        <div className="lg:col-span-5 fintech-card p-6 flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center justify-between border-b-2 border-[#333333] pb-3 mb-3">
-              <h4 className="text-xs font-black uppercase font-mono text-[#FFD400] flex items-center gap-2">
-                <Terminal className="h-4 w-4" />
-                PRODUCTION IMPLEMENTATION
+            <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <Code className="h-4 w-4 text-blue-600" />
+                Python Implementation
               </h4>
-              <span className="text-[10px] font-mono text-[#EAE5D8]">pipeline_core.py</span>
+              <span className="text-[11px] font-mono text-slate-500">production_core.py</span>
             </div>
 
-            <div className="p-3 bg-[#0A0A0A] border-2 border-[#333333] rounded text-[11px] font-mono text-[#36C96F] overflow-x-auto leading-relaxed">
-              <pre>
+            <div className="p-3.5 rounded-lg bg-slate-900 text-slate-100 text-xs font-mono overflow-x-auto shadow-inner">
+              <pre className="text-sky-300">
                 <code>{activeStage.codeSnippet}</code>
               </pre>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t-2 border-[#333333] flex items-center justify-between">
-            <span className="text-xs font-mono font-bold text-[#EAE5D8]">
-              STAGE {selectedStage + 1} OF {stages.length}
-            </span>
+          <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+            <div className="text-xs text-slate-500 font-medium">
+              Stage <strong className="text-slate-900">{selectedStage + 1}</strong> of <strong className="text-slate-900">8</strong>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 disabled={selectedStage === 0}
                 onClick={() => setSelectedStage((prev) => Math.max(0, prev - 1))}
-                className="brutal-btn-alt px-3 py-1.5 text-xs bg-[#FFFDF5] text-[#111111] disabled:opacity-40"
+                className="px-3 py-1.5 rounded-md bg-white border border-slate-300 text-slate-700 text-xs font-semibold disabled:opacity-40 hover:bg-slate-50"
               >
-                PREVIOUS
+                Previous
               </button>
               <button
                 disabled={selectedStage === stages.length - 1}
                 onClick={() => setSelectedStage((prev) => Math.min(stages.length - 1, prev + 1))}
-                className="brutal-btn px-3 py-1.5 text-xs bg-[#FFD400] text-[#111111] disabled:opacity-40"
+                className="px-3 py-1.5 rounded-md bg-[#164E8A] hover:bg-blue-700 text-white text-xs font-semibold disabled:opacity-40"
               >
-                NEXT STAGE →
+                Next Stage
               </button>
             </div>
           </div>

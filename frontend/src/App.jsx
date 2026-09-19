@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
 import { ArchitecturePipeline } from './components/ArchitecturePipeline';
 import { BatchSimulator } from './components/BatchSimulator';
 import { SingleTransactionTester } from './components/SingleTransactionTester';
@@ -7,20 +8,16 @@ import { TopologyExplorer } from './components/TopologyExplorer';
 import { AlertsAndSarDesk } from './components/AlertsAndSarDesk';
 import { MlopsMonitor } from './components/MlopsMonitor';
 import { api } from './services/api';
-import { 
-  ShieldCheck, 
-  ExternalLink,
-  Zap,
-  Activity,
-  Server
-} from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [systemStatus, setSystemStatus] = useState(null);
   const [sarPrefill, setSarPrefill] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Initial health ping to FastAPI backend
     api.getHealth().then((data) => setSystemStatus(data));
   }, []);
 
@@ -30,83 +27,90 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F0E6] text-[#111111] flex flex-col selection:bg-[#FFD400] selection:text-[#111111]">
-      {/* Top Operations Header */}
-      <Navbar 
+    <div className="min-h-screen bg-[#F6F8FB] text-slate-800 flex">
+      {/* Left Sidebar Navigation */}
+      <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        systemStatus={systemStatus} 
+        systemStatus={systemStatus}
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
       />
 
-      {/* Main Operations Canvas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* View Switcher */}
-        {activeTab === 'overview' && (
-          <ArchitecturePipeline 
-            onNavigateToSimulator={() => setActiveTab('simulator')} 
-          />
-        )}
+      {/* Main Content Area with Header */}
+      <div className="flex-1 flex flex-col min-w-0 md:pl-72">
+        {/* Top Header */}
+        <Header 
+          activeTab={activeTab}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          systemStatus={systemStatus}
+        />
 
-        {activeTab === 'simulator' && (
-          <BatchSimulator />
-        )}
+        {/* Page Content Container */}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          {activeTab === 'overview' && (
+            <ArchitecturePipeline 
+              onNavigateToSimulator={() => setActiveTab('simulator')} 
+            />
+          )}
 
-        {activeTab === 'single_test' && (
-          <SingleTransactionTester 
-            onFileSar={handleFileSarFromTester} 
-          />
-        )}
+          {activeTab === 'simulator' && (
+            <BatchSimulator />
+          )}
 
-        {activeTab === 'topology' && (
-          <TopologyExplorer />
-        )}
+          {activeTab === 'single_test' && (
+            <SingleTransactionTester 
+              onFileSar={handleFileSarFromTester} 
+            />
+          )}
 
-        {activeTab === 'alerts' && (
-          <AlertsAndSarDesk 
-            prefilledAlert={sarPrefill} 
-          />
-        )}
+          {activeTab === 'topology' && (
+            <TopologyExplorer />
+          )}
 
-        {activeTab === 'mlops' && (
-          <MlopsMonitor />
-        )}
-      </main>
+          {activeTab === 'alerts' && (
+            <AlertsAndSarDesk 
+              prefilledAlert={sarPrefill} 
+            />
+          )}
 
-      {/* Neobrutalist Operations Footer */}
-      <footer className="border-t-[3px] border-[#111111] bg-[#FFFDF5] py-6 text-xs text-[#5B5B55] mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold uppercase">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 bg-[#FFD400] border-2 border-[#111111] rounded flex items-center justify-center">
-              <ShieldCheck className="h-4 w-4 text-[#111111]" />
+          {activeTab === 'mlops' && (
+            <MlopsMonitor />
+          )}
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-200 bg-white py-4 text-xs text-slate-500">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-[#164E8A]" />
+              <span className="font-semibold text-slate-700">GNN AML Financial Crime Intelligence</span>
+              <span>•</span>
+              <span>GraphSAGE Inductive Architecture</span>
             </div>
-            <span className="text-[#111111] font-black">GNN AML INTELLIGENCE PLATFORM</span>
-            <span className="text-[#5B5B55]">•</span>
-            <span>PRODUCTION GRAPHSAGE ARCHITECTURE</span>
-          </div>
 
-          <div className="flex items-center gap-4 text-[#111111]">
-            <a 
-              href="https://github.com/pavanstarkin-tech/gnn-aml-transaction-monitoring" 
-              target="_blank" 
-              rel="noreferrer"
-              className="hover:underline flex items-center gap-1"
-            >
-              <span>GITHUB REPOSITORY</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-            <span>•</span>
-            <a 
-              href="https://huggingface.co/spaces/shootxpress/gnn_ai-classfier" 
-              target="_blank" 
-              rel="noreferrer"
-              className="hover:underline flex items-center gap-1"
-            >
-              <span>HUGGING FACE SPACE</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            <div className="flex items-center gap-4 text-slate-500">
+              <a 
+                href="https://github.com/pavanstarkin-tech/gnn-aml-transaction-monitoring" 
+                target="_blank" 
+                rel="noreferrer"
+                className="hover:text-blue-600 transition-colors"
+              >
+                GitHub Repository
+              </a>
+              <span>•</span>
+              <a 
+                href="https://huggingface.co/spaces/shootxpress/gnn_ai-classfier" 
+                target="_blank" 
+                rel="noreferrer"
+                className="hover:text-blue-600 transition-colors"
+              >
+                Hugging Face Space
+              </a>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }

@@ -7,9 +7,9 @@ import {
   Cpu, 
   BarChart3, 
   TrendingUp, 
-  Sparkles,
-  ShieldCheck,
-  Server
+  Database,
+  GitCommit,
+  Sparkles
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -59,157 +59,157 @@ export function MlopsMonitor() {
 
   return (
     <div className="space-y-6">
-      {/* Header Panel Card */}
-      <div className="brutal-card-lg bg-[#FFFDF5] p-6">
+      {/* Header Panel */}
+      <div className="fintech-card p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <Activity className="h-6 w-6 text-[#36C96F]" />
-              <h2 className="text-2xl font-black text-[#111111] tracking-tight uppercase">
-                MLOPS CONTINUOUS DRIFT & MODEL GOVERNANCE
+              <Activity className="h-5 w-5 text-emerald-600" />
+              <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                MLOps Continuous Drift & Model Governance
               </h2>
             </div>
-            <p className="text-xs text-[#5B5B55] font-bold uppercase tracking-wider mt-1">
-              KOLMOGOROV-SMIRNOV (KS) DRIFT STATISTICS, POPULATION STABILITY INDEX (PSI), & CONTINUOUS RETRAINING
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+              Real-time Kolmogorov-Smirnov (KS) feature drift checks, Population Stability Index (PSI) score tracking, and automated continuous model retraining pipeline.
             </p>
           </div>
 
           <button
             onClick={handleRetrain}
             disabled={retraining}
-            className="brutal-btn px-5 py-3 text-xs bg-[#FFD400]"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50"
           >
             {retraining ? (
               <>
-                <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                <span>RUNNING PYTORCH RETRAINING PIPELINE...</span>
+                <RotateCw className="h-3.5 w-3.5 animate-spin" />
+                <span>Running PyTorch Retraining Pipeline...</span>
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                <span>TRIGGER RETRAIN PIPELINE →</span>
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Trigger Retrain Pipeline</span>
               </>
             )}
           </button>
         </div>
 
         {retrainResult && (
-          <div className="mt-4 p-4 bg-[#36C96F]/20 border-2 border-[#36C96F] text-[#111111] text-xs font-mono font-bold flex items-center justify-between">
+          <div className="mt-4 p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#36C96F]" />
-              <span>{retrainResult.status} (VERSION: <strong>{retrainResult.new_model_version}</strong>)</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <span>{retrainResult.status} (New Version: <strong>{retrainResult.new_model_version}</strong>)</span>
             </div>
-            <span>NEW AUC-ROC: {retrainResult.new_auc_roc} ({retrainResult.auc_roc_improvement})</span>
+            <span className="font-mono font-bold">AUC-ROC: {retrainResult.new_auc_roc} ({retrainResult.auc_roc_improvement})</span>
           </div>
         )}
       </div>
 
-      {/* Model Benchmark Performance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="brutal-card bg-[#FFFDF5] p-5">
-          <span className="text-xs font-black uppercase text-[#5B5B55] block mb-1">ARCHITECTURE</span>
-          <span className="text-sm font-black text-[#111111] font-mono block">GRAPHSAGE 2-HOP</span>
-          <span className="text-[11px] font-bold text-[#4D7CFE] mt-1 block">64 HIDDEN DIMS, LAYERNORM</span>
+      {/* Model Benchmark Performance 4 KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="fintech-card p-4">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Architecture</span>
+          <span className="text-sm font-bold text-slate-900 font-mono block">GraphSAGE 2-Hop</span>
+          <span className="text-[11px] text-blue-700 mt-1 block">64 Hidden Dims, LayerNorm</span>
         </div>
 
-        <div className="brutal-card bg-[#FFFDF5] p-5 border-t-[5px] border-t-[#36C96F]">
-          <span className="text-xs font-black uppercase text-[#36C96F] block mb-1">DISCRIMINATIVE AUC-ROC</span>
-          <span className="text-3xl font-black text-[#111111] font-mono block">
+        <div className="fintech-card p-4">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Discriminative AUC-ROC</span>
+          <span className="text-2xl font-bold text-emerald-700 font-mono tabular-nums block">
             {status?.performance_benchmarks?.auc_roc || 0.978}
           </span>
-          <span className="text-[11px] font-bold text-[#5B5B55] mt-1 block">TOP 1% BENCHMARK TIER</span>
+          <span className="text-[11px] text-emerald-700 mt-1 block">Top 1% benchmark tier</span>
         </div>
 
-        <div className="brutal-card bg-[#FFFDF5] p-5 border-t-[5px] border-t-[#4D7CFE]">
-          <span className="text-xs font-black uppercase text-[#4D7CFE] block mb-1">PRECISION @ K (K=100)</span>
-          <span className="text-3xl font-black text-[#111111] font-mono block">
+        <div className="fintech-card p-4">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Precision @ K (k=100)</span>
+          <span className="text-2xl font-bold text-blue-700 font-mono tabular-nums block">
             {status?.performance_benchmarks?.precision_at_k || 0.942}
           </span>
-          <span className="text-[11px] font-bold text-[#5B5B55] mt-1 block">MINIMAL FALSE POSITIVES</span>
+          <span className="text-[11px] text-slate-500 mt-1 block">Minimal false positives</span>
         </div>
 
-        <div className="brutal-card bg-[#FFFDF5] p-5 border-t-[5px] border-t-[#8B5CF6]">
-          <span className="text-xs font-black uppercase text-[#8B5CF6] block mb-1">INFERENCE LATENCY</span>
-          <span className="text-3xl font-black text-[#111111] font-mono block">
+        <div className="fintech-card p-4">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Inference Latency</span>
+          <span className="text-2xl font-bold text-slate-800 font-mono tabular-nums block">
             {status?.performance_benchmarks?.inference_latency_ms || 3.4} ms
           </span>
-          <span className="text-[11px] font-bold text-[#5B5B55] mt-1 block">SUB-10MS SLA GUARANTEE</span>
+          <span className="text-[11px] text-slate-500 mt-1 block">Sub-10ms real-time SLA</span>
         </div>
       </div>
 
       {/* Drift Diagnostics & KS Tests */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* KS Statistical Tests */}
-        <div className="brutal-card-lg bg-[#FFFDF5] p-6 space-y-4">
-          <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
-            <h3 className="text-sm font-black text-[#111111] uppercase flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-[#4D7CFE]" />
-              KOLMOGOROV-SMIRNOV (KS) FEATURE DRIFT
+        <div className="fintech-card p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-blue-700" />
+              Kolmogorov-Smirnov (KS) Drift Statistics
             </h3>
-            <span className="brutal-badge bg-[#36C96F] text-white">
-              STATUS: {metrics.status}
+            <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+              {metrics.status}
             </span>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-3 bg-[#EAE5D8] border-2 border-[#111111] rounded-[5px] space-y-1.5">
-              <div className="flex justify-between text-xs font-black uppercase">
-                <span>AMOUNT DISTRIBUTION SHIFT (KS STAT):</span>
-                <span className="font-mono text-[#36C96F]">{metrics.ks_statistic_amount}</span>
+          <div className="space-y-3">
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="flex justify-between text-xs mb-1.5 font-semibold text-slate-700">
+                <span>Amount Distribution Shift (KS Stat):</span>
+                <span className="font-mono text-emerald-700 font-bold tabular-nums">{metrics.ks_statistic_amount}</span>
               </div>
-              <div className="w-full bg-[#FFFDF5] border-2 border-[#111111] h-4 rounded-[3px] overflow-hidden p-0.5">
+              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                 <div 
-                  className="bg-[#36C96F] h-full rounded-[2px]" 
+                  className="bg-emerald-600 h-full rounded-full" 
                   style={{ width: `${(metrics.ks_statistic_amount / 0.1) * 100}%` }}
                 />
               </div>
-              <span className="text-[10px] font-mono font-bold text-[#5B5B55] block">THRESHOLD: &lt; 0.080 (NO DATA DRIFT DETECTED)</span>
+              <span className="text-[10px] text-slate-500 mt-1 block">Threshold: &lt; 0.080 (No data drift)</span>
             </div>
 
-            <div className="p-3 bg-[#EAE5D8] border-2 border-[#111111] rounded-[5px] space-y-1.5">
-              <div className="flex justify-between text-xs font-black uppercase">
-                <span>TEMPORAL VELOCITY SHIFT (KS STAT):</span>
-                <span className="font-mono text-[#36C96F]">{metrics.ks_statistic_velocity}</span>
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="flex justify-between text-xs mb-1.5 font-semibold text-slate-700">
+                <span>Temporal Velocity Shift (KS Stat):</span>
+                <span className="font-mono text-emerald-700 font-bold tabular-nums">{metrics.ks_statistic_velocity}</span>
               </div>
-              <div className="w-full bg-[#FFFDF5] border-2 border-[#111111] h-4 rounded-[3px] overflow-hidden p-0.5">
+              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                 <div 
-                  className="bg-[#36C96F] h-full rounded-[2px]" 
+                  className="bg-emerald-600 h-full rounded-full" 
                   style={{ width: `${(metrics.ks_statistic_velocity / 0.1) * 100}%` }}
                 />
               </div>
-              <span className="text-[10px] font-mono font-bold text-[#5B5B55] block">THRESHOLD: &lt; 0.080 (VELOCITY DYNAMICS STABLE)</span>
+              <span className="text-[10px] text-slate-500 mt-1 block">Threshold: &lt; 0.080 (Stable velocity dynamics)</span>
             </div>
           </div>
         </div>
 
         {/* Population Stability Index (PSI) */}
-        <div className="brutal-card-lg bg-[#FFFDF5] p-6 space-y-4">
-          <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
-            <h3 className="text-sm font-black text-[#111111] uppercase flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-[#FF7A00]" />
-              POPULATION STABILITY INDEX (PSI)
+        <div className="fintech-card p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              Population Stability Index (PSI)
             </h3>
-            <span className="text-xs font-mono font-bold text-[#5B5B55]">TARGET &lt; 0.10</span>
+            <span className="text-xs font-mono text-slate-500">Target &lt; 0.10</span>
           </div>
 
-          <div className="p-5 bg-[#EAE5D8] border-2 border-[#111111] rounded-[5px] text-center space-y-2">
-            <span className="text-xs font-black uppercase text-[#5B5B55]">COMPOSITE PSI STABILITY SCORE</span>
-            <div className="text-4xl font-black text-[#111111] font-mono tracking-tight">
+          <div className="p-5 rounded-lg bg-slate-50 border border-slate-200 text-center space-y-2">
+            <span className="text-xs text-slate-500 font-medium">Current Composite PSI Score</span>
+            <div className="text-4xl font-extrabold text-emerald-700 font-mono tabular-nums">
               {metrics.psi_risk_scores}
             </div>
-            <p className="text-xs text-[#111111] font-bold uppercase">
-              PSI IS WELL BELOW 0.20 DRIFT LIMIT. ZERO CONCEPT DRIFT IN PRODUCTION GRAPH EMBEDDINGS.
+            <p className="text-xs text-slate-600">
+              PSI is well below critical degradation boundary of 0.20. Zero concept drift detected in production graph embeddings.
             </p>
           </div>
 
-          <div className="p-3 bg-[#111111] text-[#FFFDF5] border-2 border-[#111111] rounded text-[11px] font-mono space-y-1 font-bold">
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 space-y-1">
             <div className="flex justify-between">
-              <span className="text-[#EAE5D8]">RETRAIN SCHEDULE:</span>
-              <span className="text-white">DAILY @ 00:00 UTC</span>
+              <span>Automated Retrain Schedule:</span>
+              <span className="text-slate-900 font-semibold">Daily @ 00:00 UTC</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#EAE5D8]">MLFLOW REGISTRY:</span>
-              <span className="text-[#FFD400]">production-sage-v1.0.5</span>
+              <span>MLflow Registry Tag:</span>
+              <span className="text-blue-700 font-semibold">production-sage-v1.0.5</span>
             </div>
           </div>
         </div>
