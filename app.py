@@ -1356,5 +1356,6 @@ except Exception as e:
 app = gr.mount_gradio_app(api, demo, path="/")
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, show_error=True)
+    demo.launch(server_name="0.0.0.0", server_port=7860, ssr_mode=False, show_error=True)
+
 
