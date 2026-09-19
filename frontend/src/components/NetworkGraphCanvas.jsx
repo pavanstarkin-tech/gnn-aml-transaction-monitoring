@@ -238,24 +238,30 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             }
           }
 
-          // 3. Gentle Center Gravity & Velocity Damping
+          // 3. Gentle Center Gravity & Velocity Damping (Zero-Flicker Stabilization)
           for (let i = 0; i < nodes.length; i++) {
             if (draggingNodeId === nodes[i].id) continue;
             const node = nodes[i];
             const cdx = width / 2 - node.x;
             const cdy = height / 2 - node.y;
-            node.vx += cdx * 0.002;
-            node.vy += cdy * 0.002;
-            node.vx *= 0.85;
-            node.vy *= 0.85;
+            node.vx += cdx * 0.0015;
+            node.vy += cdy * 0.0015;
+            node.vx *= 0.80;
+            node.vy *= 0.80;
+
+            // Velocity deadzone threshold to eliminate micro-vibrations
+            if (Math.abs(node.vx) < 0.02) node.vx = 0;
+            if (Math.abs(node.vy) < 0.02) node.vy = 0;
+
             node.x += node.vx;
             node.y += node.vy;
 
-            // Safety boundary clamping
-            if (isNaN(node.x) || node.x < 40) node.x = 40 + Math.random() * 50;
-            if (node.x > width - 40) node.x = width - 40 - Math.random() * 50;
-            if (isNaN(node.y) || node.y < 40) node.y = 40 + Math.random() * 50;
-            if (node.y > height - 40) node.y = height - 40 - Math.random() * 50;
+            // Smooth boundary containment (No random jumps)
+            const margin = 45;
+            if (isNaN(node.x) || node.x < margin) { node.x = margin; node.vx = 0; }
+            if (node.x > width - margin) { node.x = width - margin; node.vx = 0; }
+            if (isNaN(node.y) || node.y < margin) { node.y = margin; node.vy = 0; }
+            if (node.y > height - margin) { node.y = height - margin; node.vy = 0; }
           }
         }
 
