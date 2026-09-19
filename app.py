@@ -1339,23 +1339,13 @@ with gr.Blocks(title="Real-Time GNN AML Transaction Monitoring System") as demo:
     btn_run_monitoring.click(run_mlops_monitoring, outputs=[monitoring_output, registry_table])
     btn_retrain.click(execute_auto_retraining, outputs=[retrain_output, registry_table])
 
-# Mount FastAPI REST API endpoints and CORS directly onto Gradio
-try:
-    demo.app.include_router(api.router)
-    demo.app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-except Exception as e:
-    print(f"Direct router inclusion: {e}")
+import uvicorn
 
-# Also maintain mounted ASGI app
+# Mount Gradio Blocks application onto FastAPI instance
 app = gr.mount_gradio_app(api, demo, path="/")
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, ssr_mode=False, show_error=True)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
+
 
 
