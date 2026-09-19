@@ -199,9 +199,22 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
     if (selectedNodeId) {
       const found = nodes.find(n => n.id === selectedNodeId);
-      if (found) setSelectedNode(found);
+      if (found) {
+        setSelectedNode(found);
+      }
     }
-  }, [safeData, selectedNodeId]);
+  }, [safeData]);
+
+  // Handle external selection prop changes (e.g. search locate) with smooth zoom
+  useEffect(() => {
+    if (selectedNodeId && simNodesRef.current.length > 0) {
+      const found = simNodesRef.current.find(n => n.id === selectedNodeId);
+      if (found) {
+        setSelectedNode(found);
+        zoomToNode(found, 1.55);
+      }
+    }
+  }, [selectedNodeId]);
 
   // Main Canvas Render Loop (High-DPI Razor-Sharp, Zero Blur, Zero Shaking)
   useEffect(() => {
@@ -439,7 +452,71 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Mouse drag & click handlers (Zero jitter, clean selection)
+  // Smooth dynamic zoom-in animation to center on selected node
+  const zoomToNode = (node, targetZoom = 1.5) => {
+    if (!node) return;
+    const width = 850;
+    const height = 500;
+    const targetPanX = (width / 2 - node.x) * targetZoom;
+    const targetPanY = (height / 2 - node.y) * targetZoom;
+
+    const startZoom = zoomLevel;
+    const startPanX = panOffset.x;
+    const startPanY = panOffset.y;
+    const duration = 380;
+    const startTime = performance.now();
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const animateZoom = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(progress);
+
+      setZoomLevel(startZoom + (targetZoom - startZoom) * eased);
+      setPanOffset({
+        x: startPanX + (targetPanX - startPanX) * eased,
+        y: startPanY + (targetPanY - startPanY) * eased
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(animateZoom);
+      }
+    };
+
+    requestAnimationFrame(animateZoom);
+  };
+
+  // Smooth zoom-out to overview
+  const zoomToOverview = () => {
+    const startZoom = zoomLevel;
+    const startPanX = panOffset.x;
+    const startPanY = panOffset.y;
+    const duration = 350;
+    const startTime = performance.now();
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const animateZoom = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(progress);
+
+      setZoomLevel(startZoom + (1.0 - startZoom) * eased);
+      setPanOffset({
+        x: startPanX + (0 - startPanX) * eased,
+        y: startPanY + (0 - startPanY) * eased
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(animateZoom);
+      }
+    };
+
+    requestAnimationFrame(animateZoom);
+  };
+
+  // Mouse drag & click handlers (Zero jitter, clean selection, dynamic zoom)
   const handleMouseDown = (e) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -465,6 +542,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       setSelectedNode(clicked);
       setDraggingNodeId(clicked.id);
       if (onSelectNode) onSelectNode(clicked);
+      // Trigger dynamic smooth zoom-in centered on the clicked node
+      zoomToNode(clicked, 1.55);
     } else {
       setIsDraggingCanvas(true);
       setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
@@ -502,8 +581,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
   };
 
   const handleResetView = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
+    setSelectedNode(null);
+    zoomToOverview();
   };
 
   return (
@@ -585,8 +664,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
               <h4 className="font-bold text-xs text-slate-900 font-mono">{selectedNode.id}</h4>
             </div>
             <button
-              onClick={() => setSelectedNode(null)}
+              onClick={handleResetView}
               className="text-slate-400 hover:text-slate-700 text-xs font-bold"
+              title="Close & Zoom Out"
             >
               ✕
             </button>
