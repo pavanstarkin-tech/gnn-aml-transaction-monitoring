@@ -203,7 +203,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     }
   }, [safeData, selectedNodeId]);
 
-  // Main Canvas Render Loop (Light Theme, Zero Shaking)
+  // Main Canvas Render Loop (High-DPI Razor-Sharp, Zero Blur, Zero Shaking)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -222,12 +222,18 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
     const render = () => {
       try {
-        const width = canvas.width || 850;
-        const height = canvas.height || 520;
+        const dpr = window.devicePixelRatio || 1;
+        const width = canvas.width / dpr;
+        const height = canvas.height / dpr;
 
-        ctx.clearRect(0, 0, width, height);
+        // Reset transform & clear full canvas
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Light background fill
+        // Apply DPR scaling for ultra-crisp Retina rendering
+        ctx.scale(dpr, dpr);
+
+        // Crisp light background fill
         ctx.fillStyle = '#F8FAFC';
         ctx.fillRect(0, 0, width, height);
 
@@ -260,16 +266,6 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         const links = simLinksRef.current;
         const activeSelId = selectedNode?.id;
 
-        // Set of connected neighbor IDs for the selected node
-        const connectedNeighborIds = new Set();
-        if (activeSelId) {
-          connectedNeighborIds.add(activeSelId);
-          links.forEach(l => {
-            if (l.sourceNode.id === activeSelId) connectedNeighborIds.add(l.targetNode.id);
-            if (l.targetNode.id === activeSelId) connectedNeighborIds.add(l.sourceNode.id);
-          });
-        }
-
         // Draw Links / Connections
         links.forEach((link) => {
           if (filterRiskOnly && !link.is_suspicious) return;
@@ -286,17 +282,13 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             ctx.strokeStyle = link.is_suspicious ? '#DC2626' : '#2563EB';
             ctx.lineWidth = 3.5;
             ctx.setLineDash(link.is_suspicious ? [5, 3] : []);
-          } else if (activeSelId) {
-            ctx.strokeStyle = 'rgba(203, 213, 225, 0.35)';
-            ctx.lineWidth = 1.0;
-            ctx.setLineDash([]);
           } else if (link.is_suspicious) {
             ctx.strokeStyle = '#DC2626';
             ctx.lineWidth = 2.2;
             ctx.setLineDash([4, 3]);
           } else {
             ctx.strokeStyle = '#CBD5E1';
-            ctx.lineWidth = 1.2;
+            ctx.lineWidth = 1.3;
             ctx.setLineDash([]);
           }
           ctx.stroke();
@@ -309,7 +301,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
           const ay = tgt.y - Math.sin(angle) * arrowDist;
           ctx.fillStyle = isConnectedToSelected 
             ? (link.is_suspicious ? '#DC2626' : '#2563EB')
-            : (activeSelId ? 'rgba(148, 163, 184, 0.4)' : (link.is_suspicious ? '#DC2626' : '#94A3B8'));
+            : (link.is_suspicious ? '#DC2626' : '#94A3B8');
           ctx.beginPath();
           ctx.moveTo(ax, ay);
           ctx.lineTo(ax - 6 * Math.cos(angle - Math.PI / 6), ay - 6 * Math.sin(angle - Math.PI / 6));
@@ -332,20 +324,17 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             const py = link.sourceNode.y + (link.targetNode.y - link.sourceNode.y) * p.progress;
 
             ctx.beginPath();
-            ctx.arc(px, py, link.is_suspicious ? 3 : 2, 0, 2 * Math.PI);
+            ctx.arc(px, py, link.is_suspicious ? 3.5 : 2.5, 0, 2 * Math.PI);
             ctx.fillStyle = link.is_suspicious ? '#DC2626' : '#2563EB';
             ctx.fill();
           });
         }
 
-        // Draw Nodes
+        // Draw Nodes (100% Solid, Sharp, Never Blurred)
         nodes.forEach((node) => {
           if (filterRiskOnly && !node.is_aml_flagged) return;
 
           const isSelected = activeSelId && activeSelId === node.id;
-          const isConnectedNeighbor = activeSelId && connectedNeighborIds.has(node.id);
-          const isDimmed = activeSelId && !isConnectedNeighbor;
-
           const currentRadius = isSelected ? node.radius + 4 : node.radius;
 
           // Halo for Selected or Critical Flagged Nodes
@@ -357,17 +346,17 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
           } else if (node.is_aml_flagged) {
             ctx.beginPath();
             ctx.arc(node.x, node.y, currentRadius + 4, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(220, 38, 38, 0.15)';
+            ctx.fillStyle = 'rgba(220, 38, 38, 0.18)';
             ctx.fill();
           }
 
-          // Node Body Fill
+          // Node Body Fill (100% Solid & Vibrant)
           ctx.beginPath();
           ctx.arc(node.x, node.y, currentRadius, 0, 2 * Math.PI);
-          ctx.fillStyle = isDimmed ? `${node.color}90` : node.color;
+          ctx.fillStyle = node.color;
           ctx.fill();
 
-          // High-Contrast Borders
+          // High-Contrast Crisp Borders
           if (isSelected) {
             // Outer thick white ring
             ctx.strokeStyle = '#FFFFFF';
@@ -380,20 +369,16 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             ctx.strokeStyle = '#0F172A';
             ctx.lineWidth = 2;
             ctx.stroke();
-          } else if (isConnectedNeighbor) {
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
           } else {
             ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 1.8;
             ctx.stroke();
           }
 
-          // Node Text Label with Pill Background for Selected Nodes
+          // Node Text Label (Sharp & Crisp)
           if (isSelected) {
             const labelText = node.id;
-            ctx.font = 'bold 11px -apple-system, sans-serif';
+            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
             const textMetrics = ctx.measureText(labelText);
             const textWidth = textMetrics.width;
 
@@ -412,8 +397,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             ctx.textAlign = 'center';
             ctx.fillText(labelText, node.x, pillY + 13);
           } else {
-            ctx.font = '10px -apple-system, sans-serif';
-            ctx.fillStyle = isDimmed ? '#94A3B8' : '#334155';
+            ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillStyle = '#1E293B';
             ctx.textAlign = 'center';
             ctx.fillText(node.id, node.x, node.y + currentRadius + 12);
           }
@@ -434,13 +419,19 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     };
   }, [panOffset, zoomLevel, filterRiskOnly, selectedNode]);
 
-  // Resize handler
+  // High-DPI Resize handler
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current && canvasRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        canvasRef.current.width = Math.max(600, rect.width);
-        canvasRef.current.height = Math.max(480, rect.height || 520);
+        const dpr = window.devicePixelRatio || 1;
+        const width = Math.max(600, rect.width);
+        const height = Math.max(480, rect.height || 520);
+
+        canvasRef.current.width = Math.floor(width * dpr);
+        canvasRef.current.height = Math.floor(height * dpr);
+        canvasRef.current.style.width = `${width}px`;
+        canvasRef.current.style.height = `${height}px`;
       }
     };
     updateSize();
@@ -455,8 +446,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const width = canvasRef.current.width;
-    const height = canvasRef.current.height;
+    const width = rect.width;
+    const height = rect.height;
 
     const worldX = (mouseX - (width / 2 + panOffset.x)) / zoomLevel + width / 2;
     const worldY = (mouseY - (height / 2 + panOffset.y)) / zoomLevel + height / 2;
@@ -486,8 +477,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       const rect = canvasRef.current.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-      const width = canvasRef.current.width;
-      const height = canvasRef.current.height;
+      const width = rect.width;
+      const height = rect.height;
 
       const worldX = (mouseX - (width / 2 + panOffset.x)) / zoomLevel + width / 2;
       const worldY = (mouseY - (height / 2 + panOffset.y)) / zoomLevel + height / 2;
