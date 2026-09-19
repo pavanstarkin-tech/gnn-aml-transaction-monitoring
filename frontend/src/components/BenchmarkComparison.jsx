@@ -419,63 +419,174 @@ export function BenchmarkComparison() {
         </div>
       )}
 
-      {/* SECTION 3: Typology Catch-Rate Horizontal Bar Chart */}
+      {/* SECTION 3: Typology Catch-Rate Vertical Grouped Bar Chart */}
       {(activeCategory === 'ALL' || activeCategory === 'TYPOLOGY') && (
-        <div className="fintech-card p-6 space-y-4">
+        <div className="fintech-card p-6 space-y-5">
           <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                Financial Crime Typology Catch Rates (%)
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Financial Crime Typology Catch Rates (Vertical Bar Chart)
               </h3>
               <p className="text-xs text-slate-500">
-                Detection accuracy across evasive laundering behaviors and structuring patterns
+                Detection accuracy (%) across 5 evasive laundering patterns comparing Legacy Rules vs XGBoost vs Our GraphSAGE GNN
               </p>
             </div>
             <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
-              GraphSAGE Relational Superiority
+              Vertical Grouped Comparison
             </span>
           </div>
 
-          <div className="space-y-4 pt-1">
-            {typologyData.map((item, idx) => (
-              <div key={idx} className="space-y-1.5 text-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <div>
-                    <span className="font-bold text-slate-900 text-xs">{item.name}</span>
-                    <p className="text-[11px] text-slate-500">{item.description}</p>
-                  </div>
-                  <div className="flex items-center gap-3 font-mono text-[11px] shrink-0">
-                    <span className="text-slate-400">Rules: {item.rules}%</span>
-                    <span className="text-orange-600">ML: {item.ml}%</span>
-                    <span className="text-blue-900 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                      GNN: {item.gnn}%
-                    </span>
-                  </div>
-                </div>
+          {/* SVG Vertical Grouped Bar Chart */}
+          <div className="w-full overflow-x-auto pt-2 pb-1">
+            <div className="min-w-[700px] flex justify-center">
+              <svg width="100%" height="280" viewBox="0 0 860 280" className="overflow-visible select-none">
+                {/* Y-Axis Horizontal Grid Lines */}
+                {[0, 25, 50, 75, 100].map((val) => {
+                  const y = 205 - (val / 100) * 165;
+                  return (
+                    <g key={val} className="text-[9px] fill-slate-400 font-mono">
+                      <line x1="50" y1={y} x2="840" y2={y} stroke="#E2E8F0" strokeDasharray="3 3" />
+                      <text x="42" y={y + 3} textAnchor="end">{val}%</text>
+                    </g>
+                  );
+                })}
 
-                {/* Triple Horizontal Bars */}
-                <div className="space-y-1">
-                  {/* Legacy Rules */}
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-slate-400 h-full rounded-full" style={{ width: `${item.rules}%` }} />
-                  </div>
-                  {/* XGBoost */}
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-orange-500 h-full rounded-full" style={{ width: `${item.ml}%` }} />
-                  </div>
-                  {/* Our GNN */}
-                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-blue-200">
-                    <div className="bg-[#164E8A] h-full rounded-full" style={{ width: `${item.gnn}%` }} />
-                  </div>
-                </div>
-              </div>
-            ))}
+                {/* 5 Typology Groups */}
+                {[
+                  {
+                    title: "Smurfing Loops",
+                    sub: "< 500k CTR Evasion",
+                    rules: 0,
+                    ml: 34.2,
+                    gnn: 96.4
+                  },
+                  {
+                    title: "Layering Fan-Out",
+                    sub: "1-to-Many Splitting",
+                    rules: 22.4,
+                    ml: 65.0,
+                    gnn: 94.8
+                  },
+                  {
+                    title: "Velocity Bursts",
+                    sub: "Inflow Spike Anomaly",
+                    rules: 58.2,
+                    ml: 81.4,
+                    gnn: 93.5
+                  },
+                  {
+                    title: "Offshore Hubs",
+                    sub: "Transit Gateway Nodes",
+                    rules: 41.0,
+                    ml: 72.3,
+                    gnn: 97.1
+                  },
+                  {
+                    title: "Zero-Day Mules",
+                    sub: "No Prior History",
+                    rules: 0,
+                    ml: 28.6,
+                    gnn: 89.4
+                  }
+                ].map((item, gIdx) => {
+                  const groupX = 75 + gIdx * 155;
+                  const barW = 28;
+                  const gap = 5;
+
+                  const hRules = (item.rules / 100) * 165;
+                  const hMl = (item.ml / 100) * 165;
+                  const hGnn = (item.gnn / 100) * 165;
+
+                  return (
+                    <g key={item.title}>
+                      {/* Typology Title & Subtitle Labels */}
+                      <text x={groupX + 47} y="228" textAnchor="middle" className="text-[11px] font-mono font-bold fill-slate-900">
+                        {item.title}
+                      </text>
+                      <text x={groupX + 47} y="244" textAnchor="middle" className="text-[9px] fill-slate-500 font-sans">
+                        {item.sub}
+                      </text>
+
+                      {/* 1. Legacy Rule Column */}
+                      <rect
+                        x={groupX}
+                        y={205 - (hRules > 0 ? hRules : 2)}
+                        width={barW}
+                        height={hRules > 0 ? hRules : 2}
+                        rx="3"
+                        fill="#94A3B8"
+                        className="transition-all hover:opacity-80"
+                      />
+                      <text x={groupX + barW / 2} y={205 - hRules - 5} textAnchor="middle" className="text-[9px] font-mono fill-slate-500 font-semibold">
+                        {item.rules}%
+                      </text>
+
+                      {/* 2. XGBoost ML Column */}
+                      <rect
+                        x={groupX + barW + gap}
+                        y={205 - hMl}
+                        width={barW}
+                        height={hMl}
+                        rx="3"
+                        fill="#EA580C"
+                        className="transition-all hover:opacity-80"
+                      />
+                      <text x={groupX + barW + gap + barW / 2} y={205 - hMl - 5} textAnchor="middle" className="text-[9px] font-mono fill-orange-700 font-bold">
+                        {item.ml}%
+                      </text>
+
+                      {/* 3. Our GraphSAGE GNN Column */}
+                      <rect
+                        x={groupX + (barW + gap) * 2}
+                        y={205 - hGnn}
+                        width={barW}
+                        height={hGnn}
+                        rx="3"
+                        fill="#164E8A"
+                        className="transition-all hover:opacity-80"
+                      />
+                      <text x={groupX + (barW + gap) * 2 + barW / 2} y={205 - hGnn - 5} textAnchor="middle" className="text-[10px] font-mono fill-blue-900 font-black">
+                        {item.gnn}%
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 border-t border-slate-100">
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-slate-400 inline-block"></span> Legacy Rule Thresholds</span>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-orange-500 inline-block"></span> Tabular XGBoost</span>
-            <span className="flex items-center gap-1.5 font-bold text-blue-900"><span className="h-2.5 w-2.5 rounded bg-[#164E8A] inline-block"></span> Our GraphSAGE GNN</span>
+          {/* Bar Chart Legend & Typology Highlights Grid */}
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-3 border-t border-slate-100">
+            <div className="flex flex-wrap items-center gap-4 text-[11px]">
+              <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-slate-400 inline-block"></span> Legacy Rules</span>
+              <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-orange-500 inline-block"></span> Tabular XGBoost</span>
+              <span className="flex items-center gap-1.5 font-bold text-blue-900"><span className="h-3 w-3 rounded bg-[#164E8A] inline-block"></span> Our GraphSAGE GNN</span>
+            </div>
+            <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+              Avg Typology Catch Rate: 94.2% vs 56.3% ML vs 24.3% Rules
+            </span>
+          </div>
+
+          {/* Detailed Typology Explanation Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
+            {typologyData.map((item, idx) => (
+              <div key={idx} className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 font-mono block">
+                  VECTOR 0{idx + 1}
+                </span>
+                <div className="text-xs font-bold text-slate-900 leading-tight">
+                  {item.name.split(' (')[0]}
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-mono pt-1">
+                  <span className="text-slate-400">R: {item.rules}%</span>
+                  <span className="text-orange-600">ML: {item.ml}%</span>
+                  <span className="text-blue-900 font-bold">GNN: {item.gnn}%</span>
+                </div>
+                <p className="text-[10px] text-slate-500 pt-0.5 leading-snug">
+                  {item.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}
