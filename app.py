@@ -1349,14 +1349,8 @@ if __name__ == "__main__":
     # Inject FastAPI REST API routes into Gradio ASGI server
     for route in api.routes:
         demo.server_app.routes.append(route)
-    demo.server_app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
     demo.block_thread()
+
 
 
 
