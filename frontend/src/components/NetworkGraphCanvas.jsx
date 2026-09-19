@@ -84,9 +84,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
     const nodes = (safeData.nodes || []).map((node, i) => {
       const angle = (i / Math.max(1, safeData.nodes.length)) * 2 * Math.PI;
-      const radius = 110 + (i % 4) * 55;
-      const x = width / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 30;
-      const y = height / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 30;
+      const radius = 140 + (i % 5) * 50;
+      const x = width / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 40;
+      const y = height / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 40;
 
       const risk = Number(node.risk_score) || 0.1;
       const isFlagged = Boolean(node.is_aml_flagged || risk >= 0.70);
@@ -190,62 +190,72 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         const nodes = simNodesRef.current;
         const links = simLinksRef.current;
 
-        // Physics step
+        // Physics Simulation Step (Coulomb Repulsion + Hooke Springs)
         if (nodes.length > 0) {
-          // Node repulsion
+          // 1. Universal Node-to-Node Coulomb Repulsion (Pushes all nodes apart)
           for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
               const dx = nodes[j].x - nodes[i].x;
               const dy = nodes[j].y - nodes[i].y;
-              const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-              if (dist < 150) {
-                const force = ((150 - dist) / dist) * 0.04;
+              const distSq = dx * dx + dy * dy;
+              const dist = Math.sqrt(distSq) || 1;
+              if (dist < 320) {
+                const repForce = Math.min(12, 1400 / (distSq + 400));
+                const fx = (dx / dist) * repForce;
+                const fy = (dy / dist) * repForce;
                 if (draggingNodeId !== nodes[i].id) {
-                  nodes[i].vx -= dx * force;
-                  nodes[i].vy -= dy * force;
+                  nodes[i].vx -= fx;
+                  nodes[i].vy -= fy;
                 }
                 if (draggingNodeId !== nodes[j].id) {
-                  nodes[j].vx += dx * force;
-                  nodes[j].vy += dy * force;
+                  nodes[j].vx += fx;
+                  nodes[j].vy += fy;
                 }
               }
             }
           }
 
-          // Link spring attraction
+          // 2. Hooke's Spring Law along Connected Edges (Pulls linked nodes together)
           for (let k = 0; k < links.length; k++) {
             const link = links[k];
-            const dx = link.targetNode.x - link.sourceNode.x;
-            const dy = link.targetNode.y - link.sourceNode.y;
+            const src = link.sourceNode;
+            const tgt = link.targetNode;
+            const dx = tgt.x - src.x;
+            const dy = tgt.y - src.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            const targetDist = link.is_suspicious ? 80 : 120;
-            const force = (dist - targetDist) * 0.0025;
-            if (draggingNodeId !== link.sourceNode.id) {
-              link.sourceNode.vx += dx * force;
-              link.sourceNode.vy += dy * force;
+            const idealDist = link.is_suspicious ? 110 : 150;
+            const springForce = (dist - idealDist) * 0.02;
+            const sfx = (dx / dist) * springForce;
+            const sfy = (dy / dist) * springForce;
+
+            if (draggingNodeId !== src.id) {
+              src.vx += sfx;
+              src.vy += sfy;
             }
-            if (draggingNodeId !== link.targetNode.id) {
-              link.targetNode.vx -= dx * force;
-              link.targetNode.vy -= dy * force;
+            if (draggingNodeId !== tgt.id) {
+              tgt.vx -= sfx;
+              tgt.vy -= sfy;
             }
           }
 
-          // Gravity & bounds
+          // 3. Gentle Center Gravity & Velocity Damping
           for (let i = 0; i < nodes.length; i++) {
             if (draggingNodeId === nodes[i].id) continue;
             const node = nodes[i];
             const cdx = width / 2 - node.x;
             const cdy = height / 2 - node.y;
-            node.vx += cdx * 0.0006;
-            node.vy += cdy * 0.0006;
+            node.vx += cdx * 0.002;
+            node.vy += cdy * 0.002;
             node.vx *= 0.85;
             node.vy *= 0.85;
             node.x += node.vx;
             node.y += node.vy;
 
-            // Constrain inside visible area
-            if (isNaN(node.x)) node.x = width / 2;
-            if (isNaN(node.y)) node.y = height / 2;
+            // Safety boundary clamping
+            if (isNaN(node.x) || node.x < 40) node.x = 40 + Math.random() * 50;
+            if (node.x > width - 40) node.x = width - 40 - Math.random() * 50;
+            if (isNaN(node.y) || node.y < 40) node.y = 40 + Math.random() * 50;
+            if (node.y > height - 40) node.y = height - 40 - Math.random() * 50;
           }
         }
 
