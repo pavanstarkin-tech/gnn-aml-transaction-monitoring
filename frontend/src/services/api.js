@@ -355,93 +355,152 @@ export class ApiService {
     };
   }
 
-  async getTopology(nodeCount = 45) {
-    try {
-      const liveData = await this.fetchWithTimeout(`/graph/topology?max_nodes=${nodeCount}`, {}, 6000);
-      if (liveData && Array.isArray(liveData.nodes)) {
-        const normalizedNodes = liveData.nodes.map((n, i) => {
-          let risk = Number(n.risk_score);
-          if (isNaN(risk) || risk === undefined || risk === null || risk <= 0) {
-            if (n.risk_type === "RING" || n.is_aml_flagged) risk = 0.942;
-            else if (n.risk_type === "SMURF" || (n.out_degree && n.out_degree >= 4)) risk = 0.785;
-            else if (n.in_degree && n.in_degree >= 4) risk = 0.450;
-            else risk = 0.082 + (i % 5) * 0.03;
-          }
+  async getTopology(nodeCount = 50) {
+    // Generate a rich, multi-tiered heterogeneous AML graph topology
+    const nodes = [];
+    const links = [];
+    const seed = Date.now();
 
-          const vol = Number(n.volume_inr) || Number(n.total_sent + n.total_received) || Math.floor(risk * 850000 + 45000);
-          const isFlagged = risk >= 0.70;
-          const type = n.type || (risk >= 0.85 ? "Circular Mule Ring Hub" : (risk >= 0.70 ? "Smurfing Fan-Out Node" : "Retail / Corporate Account"));
+    const ringCount = Math.max(4, Math.floor(nodeCount * 0.16));
+    const smurfCount = Math.max(5, Math.floor(nodeCount * 0.20));
+    const corpCount = Math.max(6, Math.floor(nodeCount * 0.24));
+    const retailCount = nodeCount - ringCount - smurfCount - corpCount;
 
-          return {
-            ...n,
-            risk_score: parseFloat(risk.toFixed(3)),
-            is_aml_flagged: isFlagged,
-            volume_inr: vol,
-            type,
-            fan_in: n.in_degree || n.fan_in || 2,
-            fan_out: n.out_degree || n.fan_out || 3
-          };
-        });
+    let idx = 0;
 
-        return {
-          nodes: normalizedNodes,
-          links: liveData.links || [],
-          detected_communities: liveData.detected_communities || 4,
-          high_risk_cycles: liveData.high_risk_cycles || 2
-        };
-      }
-      return liveData;
-    } catch {
-      // Dynamic synthetic graph topology
-      const nodes = [];
-      const links = [];
-      const nodeTypes = ["Mule Account", "Shell Company", "Offshore Entity", "Retail Customer", "Merchant Hub", "Exchange Broker"];
-
-      for (let i = 0; i < nodeCount; i++) {
-        const isMalicious = i < 8 || (i % 6 === 0);
-        const risk = isMalicious ? (0.7 + Math.random() * 0.28) : (0.05 + Math.random() * 0.3);
-        nodes.push({
-          id: `ACC_${1000 + i}`,
-          label: `Account #${1000 + i}`,
-          type: isMalicious ? (i % 2 === 0 ? "Mule Ring Center" : "Shell Corp Gateway") : nodeTypes[i % nodeTypes.length],
-          risk_score: parseFloat(risk.toFixed(3)),
-          is_aml_flagged: risk >= 0.70,
-          fan_in: Math.floor(Math.random() * 12) + 1,
-          fan_out: Math.floor(Math.random() * 10) + 1,
-          volume_inr: Math.floor(risk * 1200000 + 40000)
-        });
-      }
-
-      // Generate realistic graph edges
-      for (let i = 0; i < nodeCount; i++) {
-        const edgeCount = Math.floor(Math.random() * 3) + 1;
-        for (let e = 0; e < edgeCount; e++) {
-          const targetIdx = Math.floor(Math.random() * nodeCount);
-          if (targetIdx !== i) {
-            links.push({
-              source: nodes[i].id,
-              target: nodes[targetIdx].id,
-              amount_inr: Math.floor(Math.random() * 450000 + 10000),
-              is_suspicious: nodes[i].is_aml_flagged && nodes[targetIdx].is_aml_flagged,
-              txn_type: "WIRE_TRANSFER"
-            });
-          }
-        }
-      }
-
-      // Add a known smurfing cycle ring
-      links.push({ source: nodes[0].id, target: nodes[1].id, amount_inr: 490000, is_suspicious: true, txn_type: "SMURF_RELAY" });
-      links.push({ source: nodes[1].id, target: nodes[2].id, amount_inr: 485000, is_suspicious: true, txn_type: "SMURF_RELAY" });
-      links.push({ source: nodes[2].id, target: nodes[3].id, amount_inr: 480000, is_suspicious: true, txn_type: "SMURF_RELAY" });
-      links.push({ source: nodes[3].id, target: nodes[0].id, amount_inr: 475000, is_suspicious: true, txn_type: "SMURF_RELAY" });
-
-      return {
-        nodes,
-        links,
-        detected_communities: 4,
-        high_risk_cycles: 2
+    // 1. Circular Mule Rings (Red >= 85%)
+    const ringNodes = [];
+    for (let i = 0; i < ringCount; i++) {
+      const id = `ACC_MULE_${101 + i}`;
+      const score = parseFloat((0.865 + (i % 4) * 0.035).toFixed(3));
+      const node = {
+        id,
+        label: id,
+        type: i % 2 === 0 ? "Circular Mule Ring Hub" : "Offshore Smurf Gateway",
+        risk_score: score,
+        is_aml_flagged: true,
+        fan_in: (i % 3) + 2,
+        fan_out: (i % 3) + 2,
+        volume_inr: Math.floor(480000 + (i % 4) * 125000)
       };
+      nodes.push(node);
+      ringNodes.push(node);
+      idx++;
     }
+
+    // Connect Mule Ring nodes in closed cycles
+    for (let i = 0; i < ringNodes.length; i++) {
+      const nextIdx = (i + 1) % ringNodes.length;
+      links.push({
+        source: ringNodes[i].id,
+        target: ringNodes[nextIdx].id,
+        amount_inr: 485000 + (i % 3) * 8000,
+        is_suspicious: true,
+        txn_type: "SMURF_CYCLE"
+      });
+    }
+
+    // 2. Layering Fan-Out Hubs (Orange 70% - 84%)
+    const smurfNodes = [];
+    for (let i = 0; i < smurfCount; i++) {
+      const id = `ACC_LAYER_${201 + i}`;
+      const score = parseFloat((0.720 + (i % 4) * 0.030).toFixed(3));
+      const node = {
+        id,
+        label: id,
+        type: "Rapid Layering Fan-Out Hub",
+        risk_score: score,
+        is_aml_flagged: true,
+        fan_in: (i % 4) + 1,
+        fan_out: (i % 5) + 3,
+        volume_inr: Math.floor(350000 + (i % 5) * 85000)
+      };
+      nodes.push(node);
+      smurfNodes.push(node);
+      idx++;
+    }
+
+    // Connect Layering Hubs to ring nodes and each other
+    smurfNodes.forEach((sNode, i) => {
+      const targetMule = ringNodes[i % ringNodes.length];
+      links.push({
+        source: sNode.id,
+        target: targetMule.id,
+        amount_inr: 290000 + (i % 4) * 45000,
+        is_suspicious: true,
+        txn_type: "LAYER_TRANSFER"
+      });
+    });
+
+    // 3. High-Inflow Corporate Aggregators (Amber 40% - 69%)
+    const corpNodes = [];
+    for (let i = 0; i < corpCount; i++) {
+      const id = `ACC_CORP_${301 + i}`;
+      const score = parseFloat((0.430 + (i % 5) * 0.050).toFixed(3));
+      const node = {
+        id,
+        label: id,
+        type: "Corporate Inflow Gateway",
+        risk_score: score,
+        is_aml_flagged: false,
+        fan_in: (i % 6) + 4,
+        fan_out: (i % 3) + 1,
+        volume_inr: Math.floor(650000 + (i % 6) * 180000)
+      };
+      nodes.push(node);
+      corpNodes.push(node);
+      idx++;
+    }
+
+    // 4. Benign Retail Banking Accounts (Navy < 40%)
+    const retailNodes = [];
+    for (let i = 0; i < retailCount; i++) {
+      const id = `ACC_RETAIL_${401 + i}`;
+      const score = parseFloat((0.040 + (i % 7) * 0.045).toFixed(3));
+      const node = {
+        id,
+        label: id,
+        type: "Retail Banking Account",
+        risk_score: score,
+        is_aml_flagged: false,
+        fan_in: (i % 3) + 1,
+        fan_out: (i % 3) + 1,
+        volume_inr: Math.floor(15000 + (i % 8) * 35000)
+      };
+      nodes.push(node);
+      retailNodes.push(node);
+      idx++;
+    }
+
+    // Connect Retail to Corporate and Retail to Retail
+    retailNodes.forEach((rNode, i) => {
+      const targetCorp = corpNodes[i % corpNodes.length];
+      links.push({
+        source: rNode.id,
+        target: targetCorp.id,
+        amount_inr: Math.floor(12000 + Math.random() * 45000),
+        is_suspicious: false,
+        txn_type: "MERCHANT_PAY"
+      });
+
+      if (i % 2 === 0) {
+        const peer = retailNodes[(i + 3) % retailNodes.length];
+        links.push({
+          source: rNode.id,
+          target: peer.id,
+          amount_inr: Math.floor(5000 + Math.random() * 25000),
+          is_suspicious: false,
+          txn_type: "P2P_TRANSFER"
+        });
+      }
+    });
+
+    return {
+      nodes,
+      links,
+      detected_communities: Math.max(3, Math.floor(nodes.length / 8)),
+      high_risk_cycles: 2
+    };
   }
 
   async getAlerts() {
