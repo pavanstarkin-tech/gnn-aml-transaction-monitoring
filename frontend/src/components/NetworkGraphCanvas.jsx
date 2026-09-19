@@ -652,9 +652,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         onMouseLeave={handleMouseUp}
       />
 
-      {/* Selected Account Inspector Drawer (Bottom Left) */}
+      {/* Selected Account Inspector Drawer (Bottom Right) */}
       {selectedNode && (
-        <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:w-80 z-20 p-4 rounded-xl bg-white/95 backdrop-blur-xs border border-slate-300 shadow-lg space-y-2.5">
+        <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 z-20 p-4 rounded-xl bg-white/95 backdrop-blur-xs border border-slate-300 shadow-lg space-y-2.5">
           <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center gap-2">
               <div 
@@ -707,8 +707,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         </div>
       )}
 
-      {/* Legend Footer */}
-      <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 pointer-events-none shadow-2xs">
+      {/* Legend Footer (Bottom Left) */}
+      <div className="absolute bottom-3 left-3 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 pointer-events-none shadow-2xs">
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-600"></span> Critical (≥85%)</span>
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-orange-600"></span> High (≥70%)</span>
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500"></span> Medium (≥40%)</span>
