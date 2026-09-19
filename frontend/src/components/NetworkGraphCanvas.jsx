@@ -1,13 +1,4 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RefreshCw, 
-  Filter, 
-  ShieldAlert, 
-  Activity,
-  Layers
-} from 'lucide-react';
 
 export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
   const containerRef = useRef(null);
@@ -472,41 +463,40 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
           <span>Edges: <strong className="text-slate-700 font-mono">{simLinksRef.current.length}</strong></span>
         </div>
 
-        <div className="flex items-center gap-1 pointer-events-auto bg-white/95 backdrop-blur-xs p-1 rounded-lg border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-white/95 backdrop-blur-xs p-1 rounded-lg border border-slate-200 shadow-xs">
           <button
             onClick={() => setFilterRiskOnly(!filterRiskOnly)}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
+            className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
               filterRiskOnly
                 ? 'bg-red-600 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <Filter className="h-3 w-3" />
-            <span>High Risk Only</span>
+            <span>{filterRiskOnly ? 'HIGH RISK ACTIVE' : 'FILTER HIGH RISK'}</span>
           </button>
 
           <button
             onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.2))}
-            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+            className="px-2 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors text-xs font-bold"
             title="Zoom In"
           >
-            <ZoomIn className="h-4 w-4" />
+            +
           </button>
 
           <button
             onClick={() => setZoomLevel((z) => Math.max(0.4, z - 0.2))}
-            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+            className="px-2 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors text-xs font-bold"
             title="Zoom Out"
           >
-            <ZoomOut className="h-4 w-4" />
+            −
           </button>
 
           <button
             onClick={handleResetView}
-            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+            className="px-2 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors text-[11px] font-bold"
             title="Reset View"
           >
-            <RefreshCw className="h-4 w-4" />
+            RESET
           </button>
         </div>
       </div>

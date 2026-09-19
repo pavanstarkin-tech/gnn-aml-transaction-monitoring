@@ -1,19 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  ShieldAlert, 
-  CheckCircle2, 
-  XCircle, 
-  Download, 
-  Printer, 
-  Search, 
-  ExternalLink,
-  Clock,
-  Send,
-  AlertTriangle,
-  Layers,
-  Building2
-} from 'lucide-react';
 import { api } from '../services/api';
 
 export function AlertsAndSarDesk({ prefilledAlert }) {
@@ -92,7 +77,7 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-red-600" />
+              <span className="h-2 w-2 rounded-full bg-red-600"></span>
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
                 FIU SAR / STR Compliance & Investigation Desk
               </h2>
@@ -193,10 +178,9 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
 
                 <button
                   onClick={() => setShowDossierModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#164E8A] hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors"
+                  className="px-3 py-1.5 rounded-md bg-[#164E8A] hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors"
                 >
-                  <FileText className="h-3.5 w-3.5" />
-                  <span>View Printable STR Dossier</span>
+                  View Printable STR Dossier →
                 </button>
               </div>
 
@@ -226,8 +210,7 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
 
               {/* Narrative Breakdown */}
               <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-blue-700" />
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Compliance Investigation Narrative
                 </h4>
                 <p className="text-xs text-slate-700 leading-relaxed">
@@ -277,7 +260,7 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
 
                 {triageSuccess && (
                   <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-600"></span>
                     <span>{triageSuccess.message} (Ref: {triageSuccess.sar_reference_id})</span>
                   </div>
                 )}
@@ -285,9 +268,8 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
                 <button
                   type="submit"
                   disabled={triaging}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#164E8A] hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-xs"
+                  className="w-full py-2.5 rounded-lg bg-[#164E8A] hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-xs"
                 >
-                  <Send className="h-3.5 w-3.5" />
                   <span>Confirm Triage & Update Case Record</span>
                 </button>
               </form>
@@ -322,10 +304,9 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={printSarDossier}
-                  className="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 border border-slate-300"
+                  className="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-300"
                 >
-                  <Printer className="h-3.5 w-3.5" />
-                  <span>Print Dossier</span>
+                  Print Dossier
                 </button>
                 <button
                   onClick={() => setShowDossierModal(false)}

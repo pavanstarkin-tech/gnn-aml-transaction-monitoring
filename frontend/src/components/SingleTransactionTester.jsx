@@ -1,17 +1,4 @@
 import React, { useState } from 'react';
-import { 
-  ShieldAlert, 
-  ShieldCheck, 
-  AlertTriangle, 
-  Zap, 
-  Sparkles, 
-  Layers, 
-  TrendingUp, 
-  CheckCircle2, 
-  FileText,
-  Clock,
-  ArrowRight
-} from 'lucide-react';
 import { api } from '../services/api';
 
 export function SingleTransactionTester({ onFileSar }) {
@@ -116,7 +103,7 @@ export function SingleTransactionTester({ onFileSar }) {
       <div className="fintech-card p-5">
         <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2.5">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-blue-700" />
+            <span className="h-2 w-2 rounded-full bg-blue-600"></span>
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               1-Click Typology Presets
             </h3>
@@ -259,17 +246,7 @@ export function SingleTransactionTester({ onFileSar }) {
               disabled={scoring}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#164E8A] hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-all disabled:opacity-50"
             >
-              {scoring ? (
-                <>
-                  <Clock className="h-3.5 w-3.5 animate-spin" />
-                  <span>Computing Multi-Hop GraphSAGE Embeddings...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="h-3.5 w-3.5 fill-current" />
-                  <span>Execute GNN Risk Classification</span>
-                </>
-              )}
+              <span>{scoring ? 'COMPUTING MULTI-HOP GRAPHSAGE EMBEDDINGS...' : 'EXECUTE GNN RISK CLASSIFICATION'}</span>
             </button>
           </form>
         </div>
@@ -278,8 +255,7 @@ export function SingleTransactionTester({ onFileSar }) {
         <div className="lg:col-span-6 fintech-card p-6 flex flex-col justify-between space-y-5">
           <div>
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Layers className="h-4 w-4 text-blue-700" />
+              <h3 className="text-base font-bold text-slate-900">
                 GNN Inference Output
               </h3>
               <span className="text-xs font-mono text-emerald-700 font-semibold">
@@ -329,8 +305,7 @@ export function SingleTransactionTester({ onFileSar }) {
 
                 {/* Feature Attribution (Integrated Gradients) */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5 text-blue-700" />
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     Top Attributed Features (Integrated Gradients)
                   </h4>
                   <div className="space-y-1.5">
@@ -357,7 +332,7 @@ export function SingleTransactionTester({ onFileSar }) {
               </div>
             ) : (
               <div className="py-12 text-center text-slate-600 space-y-2">
-                <Layers className="h-8 w-8 mx-auto text-slate-400" />
+                <span className="h-3 w-3 rounded-full bg-slate-300 inline-block"></span>
                 <p className="text-xs">Click "Execute GNN Risk Classification" to calculate scores</p>
               </div>
             )}
@@ -368,9 +343,7 @@ export function SingleTransactionTester({ onFileSar }) {
               onClick={() => onFileSar && onFileSar(result)}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold text-xs transition-colors shadow-xs"
             >
-              <FileText className="h-3.5 w-3.5" />
-              <span>Generate Official FIU SAR Filing Dossier</span>
-              <ArrowRight className="h-3 w-3" />
+              <span>Generate Official FIU SAR Filing Dossier →</span>
             </button>
           )}
         </div>

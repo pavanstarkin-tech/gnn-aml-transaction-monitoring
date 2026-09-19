@@ -1,11 +1,4 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  Settings, 
-  ExternalLink, 
-  ChevronRight,
-  Server
-} from 'lucide-react';
 import { api } from '../services/api';
 
 export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOpen }) {
@@ -97,13 +90,13 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
 
             <button 
               onClick={() => setIsOpen(false)}
-              className="md:hidden p-1.5 text-slate-400 hover:text-slate-600 rounded-md"
+              className="md:hidden p-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
             >
-              ✕
+              CLOSE
             </button>
           </div>
 
-          {/* Clean Minimal Navigation Links (No Icons, No Clumsy Border Lines) */}
+          {/* Clean Minimal Navigation Links (No Icons) */}
           <div className="px-3 py-4 space-y-1">
             <div className="px-3 pb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
               Navigation Modules
@@ -134,7 +127,7 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
                       <div className="text-[10px] text-slate-500 mt-0.5 leading-none">{item.desc}</div>
                     </div>
                   </div>
-                  {isActive && <ChevronRight className="h-3.5 w-3.5 text-blue-600" />}
+                  {isActive && <span className="text-xs text-blue-600 font-bold">→</span>}
                 </button>
               );
             })}
@@ -157,9 +150,9 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
             <button
               onClick={() => setShowConfig(!showConfig)}
               title="API Configuration"
-              className="text-slate-400 hover:text-blue-600 transition-colors p-1"
+              className="text-[10px] font-bold text-slate-500 hover:text-blue-700 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 transition-colors"
             >
-              <Settings className="h-3.5 w-3.5" />
+              CONFIG
             </button>
           </div>
 
@@ -169,21 +162,18 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
               href="https://huggingface.co/spaces/shootxpress/gnn_ai-classfier"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center gap-1.5 p-1.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-2xs"
+              className="flex items-center justify-center p-1.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-2xs"
             >
-              <Server className="h-3 w-3" />
-              <span>HF Space</span>
-              <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+              <span>HF Space ↗</span>
             </a>
 
             <a
               href="https://github.com/pavanstarkin-tech/gnn-aml-transaction-monitoring"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center gap-1.5 p-1.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-2xs"
+              className="flex items-center justify-center p-1.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-2xs"
             >
-              <span>GitHub</span>
-              <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+              <span>GitHub ↗</span>
             </a>
           </div>
 
@@ -204,7 +194,7 @@ export function Sidebar({ activeTab, setActiveTab, systemStatus, isOpen, setIsOp
           <div className="absolute bottom-20 left-4 right-4 z-50 p-4 rounded-xl bg-white border border-slate-300 shadow-xl space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <Settings className="h-3.5 w-3.5 text-blue-600" />
+                <span className="h-2 w-2 rounded-full bg-blue-600"></span>
                 Backend REST Target URL
               </h4>
               <button

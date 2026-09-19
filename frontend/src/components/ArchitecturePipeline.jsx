@@ -1,20 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Layers, 
-  ArrowRight, 
-  Play, 
-  RotateCcw, 
-  CheckCircle2, 
-  Cpu, 
-  Database, 
-  GitBranch, 
-  Network, 
-  ShieldAlert, 
-  FileText, 
-  Activity,
-  Zap,
-  Code
-} from 'lucide-react';
 
 export function ArchitecturePipeline({ onNavigateToSimulator }) {
   const [selectedStage, setSelectedStage] = useState(0);
@@ -26,7 +10,6 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
       id: 1,
       title: "Stage 1: Ingestion Gateway",
       subtitle: "Multi-Rail Transaction Streaming",
-      icon: Database,
       badge: "Stream Layer",
       color: "bg-blue-600 text-white",
       description: "Ingests high-throughput real-time financial events across NEFT, RTGS, IMPS, UPI, and Wire Transfers with schema validation and sub-millisecond latency.",
@@ -42,7 +25,6 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
       id: 2,
       title: "Stage 2: Feature Engineering",
       subtitle: "Velocity & Topological Profiling",
-      icon: Cpu,
       badge: "Stateful Aggregator",
       color: "bg-teal-600 text-white",
       description: "Computes 1-hour and 24-hour temporal velocity, fan-in/fan-out ratios, structuring threshold proximity, and sudden behavioral volume spikes.",
@@ -58,7 +40,6 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
       id: 3,
       title: "Stage 3: Graph Construction",
       subtitle: "Dynamic Heterogeneous Network",
-      icon: Network,
       badge: "PyTorch Geometric",
       color: "bg-emerald-600 text-white",
       description: "Transforms isolated transactions into a dynamic graph where Accounts are Nodes and Transactions form Directed Weighted Edges.",
@@ -76,7 +57,6 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
       id: 4,
       title: "Stage 4: 2-Layer GraphSAGE",
       subtitle: "Relational Neighborhood Aggregation",
-      icon: GitBranch,
       badge: "Inductive GNN",
       color: "bg-indigo-600 text-white",
       description: "Aggregates multi-hop structural topology across neighboring accounts. Detects indirect laundering paths, mule rings, and shell proxies.",
@@ -95,7 +75,6 @@ export function ArchitecturePipeline({ onNavigateToSimulator }) {
       id: 5,
       title: "Stage 5: Risk Scoring Engine",
       subtitle: "Multi-Head Inference Output",
-      icon: Zap,
       badge: "Inference 3.4ms",
       color: "bg-blue-700 text-white",
       description: "Calculates calibrated risk probability score P(Laundering) between 0.000 and 1.000 along with confidence intervals and explainability impacts.",
@@ -110,7 +89,6 @@ explanations = integrated_gradients.attribute(model, inputs=graph_batch)`
       id: 6,
       title: "Stage 6: Policy Rule Gate",
       subtitle: "Compliance Tier Routing",
-      icon: ShieldAlert,
       badge: "Regulatory Gate",
       color: "bg-rose-600 text-white",
       description: "Maps calculated risk score against strict regulatory thresholds (Auto-Pass, Human Review, SAR Investigation, Auto-Block).",
@@ -127,7 +105,6 @@ elif risk_score >= 0.70:
       id: 7,
       title: "Stage 7: SAR Generation",
       subtitle: "FIU STR / SAR Document Filing",
-      icon: FileText,
       badge: "FIU-IND Ready",
       color: "bg-amber-600 text-white",
       description: "Automatically compiles complete audit dossiers containing transaction chains, topological subgraphs, account KYC flags, and legal narrative.",
@@ -146,7 +123,6 @@ elif risk_score >= 0.70:
       id: 8,
       title: "Stage 8: MLOps Drift Monitor",
       subtitle: "Continuous KS & PSI Monitoring",
-      icon: Activity,
       badge: "Continuous Defense",
       color: "bg-slate-800 text-white",
       description: "Continuously tracks concept drift, feature distribution shifts using Kolmogorov-Smirnov (KS) tests and Population Stability Index (PSI).",
@@ -204,26 +180,14 @@ elif risk_score >= 0.70:
                   : 'bg-[#164E8A] hover:bg-blue-700 text-white'
               }`}
             >
-              {isPlaying ? (
-                <>
-                  <RotateCcw className="h-3.5 w-3.5 animate-spin" />
-                  <span>Pause Stream Flow</span>
-                </>
-              ) : (
-                <>
-                  <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>Auto-Simulate Pipeline</span>
-                </>
-              )}
+              <span>{isPlaying ? 'PAUSE STREAM FLOW' : 'AUTO-SIMULATE PIPELINE'}</span>
             </button>
 
             <button
               onClick={onNavigateToSimulator}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors shadow-2xs"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors shadow-2xs"
             >
-              <Zap className="h-3.5 w-3.5 text-blue-600" />
-              <span>Open Batch Simulator</span>
-              <ArrowRight className="h-3 w-3" />
+              <span>OPEN BATCH SIMULATOR →</span>
             </button>
           </div>
         </div>
@@ -273,8 +237,7 @@ elif risk_score >= 0.70:
                 </div>
 
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-700 mt-1">
-                  <span>Inspect</span>
-                  <ArrowRight className="h-2.5 w-2.5" />
+                  <span>INSPECT →</span>
                 </div>
               </button>
             );
@@ -311,9 +274,8 @@ elif risk_score >= 0.70:
           {/* Breakdown Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
-              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Database className="h-3.5 w-3.5 text-blue-600" />
-                Input Streams
+              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
+                INPUT STREAMS
               </h5>
               <ul className="space-y-1.5 text-xs text-slate-600">
                 {activeStage.inputs.map((inp, i) => (
@@ -326,9 +288,8 @@ elif risk_score >= 0.70:
             </div>
 
             <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
-              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Cpu className="h-3.5 w-3.5 text-teal-600" />
-                Processing Logic
+              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
+                PROCESSING LOGIC
               </h5>
               <p className="text-xs text-slate-600 leading-relaxed">
                 {activeStage.processing}
@@ -336,9 +297,8 @@ elif risk_score >= 0.70:
             </div>
 
             <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
-              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                Output Artifacts
+              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
+                OUTPUT ARTIFACTS
               </h5>
               <ul className="space-y-1.5 text-xs text-slate-600">
                 {activeStage.outputs.map((out, i) => (
@@ -363,9 +323,8 @@ elif risk_score >= 0.70:
         <div className="lg:col-span-5 fintech-card p-6 flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <Code className="h-4 w-4 text-blue-600" />
-                Python Implementation
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                PYTHON IMPLEMENTATION
               </h4>
               <span className="text-[11px] font-mono text-slate-500">production_core.py</span>
             </div>

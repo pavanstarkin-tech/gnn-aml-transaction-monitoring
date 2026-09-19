@@ -1,15 +1,4 @@
 import React from 'react';
-import { 
-  Menu, 
-  Search, 
-  Bell, 
-  ShieldCheck, 
-  Radio, 
-  CheckCircle2, 
-  Activity,
-  Zap,
-  Globe
-} from 'lucide-react';
 
 export function Header({ activeTab, onToggleSidebar, systemStatus }) {
   const tabTitles = {
@@ -47,10 +36,10 @@ export function Header({ activeTab, onToggleSidebar, systemStatus }) {
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+          className="md:hidden px-2.5 py-1 rounded-md text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
           title="Toggle Navigation Menu"
         >
-          <Menu className="h-5 w-5" />
+          MENU
         </button>
 
         <div>

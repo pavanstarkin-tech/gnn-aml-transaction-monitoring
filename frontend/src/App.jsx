@@ -8,7 +8,7 @@ import { TopologyExplorer } from './components/TopologyExplorer';
 import { AlertsAndSarDesk } from './components/AlertsAndSarDesk';
 import { MlopsMonitor } from './components/MlopsMonitor';
 import { api } from './services/api';
-import { ShieldCheck } from 'lucide-react';
+
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -83,7 +83,7 @@ export default function App() {
         <footer className="border-t border-slate-200 bg-white py-4 text-xs text-slate-500">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-[#164E8A]" />
+              <span className="h-2 w-2 rounded-full bg-[#164E8A]"></span>
               <span className="font-semibold text-slate-700">GNN AML Financial Crime Intelligence</span>
               <span>•</span>
               <span>GraphSAGE Inductive Architecture</span>
