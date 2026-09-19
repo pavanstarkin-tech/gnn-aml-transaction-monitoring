@@ -84,10 +84,12 @@ export function Navbar({ activeTab, setActiveTab, systemStatus }) {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${systemStatus?.mode ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${systemStatus?.mode ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
               </span>
-              <span className="text-slate-300 font-mono hidden lg:inline">FastAPI REST Live</span>
+              <span className="text-slate-300 font-mono hidden lg:inline">
+                {systemStatus?.mode ? 'Resilient Mode (Auto-Fallback)' : 'FastAPI REST Live'}
+              </span>
               <button 
                 onClick={() => setShowConfig(!showConfig)}
                 title="API Endpoint Configuration"
