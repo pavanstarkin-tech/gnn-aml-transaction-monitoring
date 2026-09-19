@@ -10,6 +10,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
   const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [draggingNodeId, setDraggingNodeId] = useState(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState(null);
 
   // Fallback synthetic graph if data is empty or loading
   const safeData = useMemo(() => {
@@ -64,8 +65,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
   const simNodesRef = useRef([]);
   const simLinksRef = useRef([]);
+  const animFrameRef = useRef(null);
 
-  // Initialize node layout with pre-settled physics for zero shaking/flicker
+  // Initialize fresh node layout with organic force distribution whenever data updates
   useEffect(() => {
     const width = 850;
     const height = 500;
@@ -74,8 +76,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     const nodes = (safeData.nodes || []).map((node, i) => {
       const angle = (i / Math.max(1, safeData.nodes.length)) * 2 * Math.PI;
       const radius = 135 + (i % 5) * 45;
-      const x = width / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 30;
-      const y = height / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 30;
+      const x = width / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 35;
+      const y = height / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 35;
 
       let risk = typeof node.risk_score === 'number' && !isNaN(node.risk_score) ? node.risk_score : null;
       if (risk === null) {
@@ -116,6 +118,8 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         fan_out: node.fan_out || node.out_degree || (i % 4 + 1),
         x: isNaN(x) ? width / 2 : x,
         y: isNaN(y) ? height / 2 : y,
+        baseX: isNaN(x) ? width / 2 : x,
+        baseY: isNaN(y) ? height / 2 : y,
         vx: 0,
         vy: 0,
         radius: isFlagged ? 11 : 8,
@@ -143,16 +147,16 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       }
     });
 
-    // Synchronously settle layout (80 iterations) for zero shaking at runtime
-    for (let step = 0; step < 80; step++) {
+    // Synchronously settle layout (70 iterations)
+    for (let step = 0; step < 70; step++) {
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[j].x - nodes[i].x;
           const dy = nodes[j].y - nodes[i].y;
           const distSq = dx * dx + dy * dy;
           const dist = Math.sqrt(distSq) || 1;
-          if (dist < 280) {
-            const repForce = Math.min(8, 1200 / (distSq + 300));
+          if (dist < 260) {
+            const repForce = Math.min(7, 1100 / (distSq + 250));
             const fx = (dx / dist) * repForce;
             const fy = (dy / dist) * repForce;
             nodes[i].x -= fx;
@@ -180,7 +184,6 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         tgt.y -= sfy;
       }
 
-      // Constrain within bounds
       const margin = 50;
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
@@ -188,24 +191,24 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         if (n.x > width - margin) n.x = width - margin;
         if (n.y < margin) n.y = margin;
         if (n.y > height - margin) n.y = height - margin;
+        n.baseX = n.x;
+        n.baseY = n.y;
       }
     }
-
-    // Freeze all velocities
-    nodes.forEach(n => { n.vx = 0; n.vy = 0; });
 
     simNodesRef.current = nodes;
     simLinksRef.current = links;
 
+    // Reset selection and zoom on new graph arrival
     if (selectedNodeId) {
       const found = nodes.find(n => n.id === selectedNodeId);
-      if (found) {
-        setSelectedNode(found);
-      }
+      if (found) setSelectedNode(found);
+    } else {
+      setSelectedNode(null);
     }
   }, [safeData]);
 
-  // Handle external selection prop changes (e.g. search locate) with smooth zoom
+  // Handle external selection prop changes
   useEffect(() => {
     if (selectedNodeId && simNodesRef.current.length > 0) {
       const found = simNodesRef.current.find(n => n.id === selectedNodeId);
@@ -216,7 +219,71 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     }
   }, [selectedNodeId]);
 
-  // Main Canvas Render Loop (High-DPI Razor-Sharp, Zero Blur, Zero Shaking)
+  // Dynamic zoom-in helper
+  const zoomToNode = (node, targetZoom = 1.5) => {
+    if (!node) return;
+    const width = 850;
+    const height = 500;
+    const targetPanX = (width / 2 - node.x) * targetZoom;
+    const targetPanY = (height / 2 - node.y) * targetZoom;
+
+    const startZoom = zoomLevel;
+    const startPanX = panOffset.x;
+    const startPanY = panOffset.y;
+    const duration = 360;
+    const startTime = performance.now();
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const animateZoom = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(progress);
+
+      setZoomLevel(startZoom + (targetZoom - startZoom) * eased);
+      setPanOffset({
+        x: startPanX + (targetPanX - startPanX) * eased,
+        y: startPanY + (targetPanY - startPanY) * eased
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(animateZoom);
+      }
+    };
+
+    requestAnimationFrame(animateZoom);
+  };
+
+  // Zoom-out helper
+  const zoomToOverview = () => {
+    const startZoom = zoomLevel;
+    const startPanX = panOffset.x;
+    const startPanY = panOffset.y;
+    const duration = 320;
+    const startTime = performance.now();
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const animateZoom = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(progress);
+
+      setZoomLevel(startZoom + (1.0 - startZoom) * eased);
+      setPanOffset({
+        x: startPanX + (0 - startPanX) * eased,
+        y: startPanY + (0 - startPanY) * eased
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(animateZoom);
+      }
+    };
+
+    requestAnimationFrame(animateZoom);
+  };
+
+  // Continuous Canvas Render & Particle Animation Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -224,26 +291,20 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     if (!ctx) return;
 
     let animId = null;
-    let particles = [];
-    for (let p = 0; p < 20; p++) {
-      particles.push({
-        linkIdx: p,
-        progress: Math.random(),
-        speed: 0.005 + Math.random() * 0.005
-      });
-    }
 
     const render = () => {
       try {
         const dpr = window.devicePixelRatio || 1;
         const width = canvas.width / dpr;
         const height = canvas.height / dpr;
+        const now = performance.now();
+        const timeSec = now / 1000;
 
         // Reset transform & clear full canvas
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Apply DPR scaling for ultra-crisp Retina rendering
+        // Apply DPR scaling for razor-sharp Retina rendering
         ctx.scale(dpr, dpr);
 
         // Crisp light background fill
@@ -279,7 +340,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         const links = simLinksRef.current;
         const activeSelId = selectedNode?.id;
 
-        // Draw Links / Connections
+        // 1. Draw Links / Connections
         links.forEach((link) => {
           if (filterRiskOnly && !link.is_suspicious) return;
 
@@ -323,47 +384,61 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
           ctx.fill();
         });
 
-        // Draw Transaction Particles along Links
-        if (links.length > 0) {
-          particles.forEach((p) => {
-            const link = links[p.linkIdx % links.length];
-            if (!link) return;
-            if (filterRiskOnly && !link.is_suspicious) return;
+        // 2. Draw Highly-Visible Animated Flow Dots on EVERY active edge
+        links.forEach((link, lIdx) => {
+          if (filterRiskOnly && !link.is_suspicious) return;
+          const src = link.sourceNode;
+          const tgt = link.targetNode;
+          const isConnectedToSelected = activeSelId && (src.id === activeSelId || tgt.id === activeSelId);
 
-            p.progress += p.speed;
-            if (p.progress > 1) p.progress = 0;
+          // Render 2 continuous moving transaction flow packets per edge
+          for (let d = 0; d < 2; d++) {
+            const baseSpeed = link.is_suspicious ? 0.40 : 0.28;
+            const speed = isConnectedToSelected ? baseSpeed * 1.5 : baseSpeed;
+            const progress = ((timeSec * speed + (lIdx * 0.19) + (d * 0.5)) % 1.0);
 
-            const px = link.sourceNode.x + (link.targetNode.x - link.sourceNode.x) * p.progress;
-            const py = link.sourceNode.y + (link.targetNode.y - link.sourceNode.y) * p.progress;
+            const px = src.x + (tgt.x - src.x) * progress;
+            const py = src.y + (tgt.y - src.y) * progress;
 
+            // Flow Dot Core
             ctx.beginPath();
-            ctx.arc(px, py, link.is_suspicious ? 3.5 : 2.5, 0, 2 * Math.PI);
-            ctx.fillStyle = link.is_suspicious ? '#DC2626' : '#2563EB';
+            ctx.arc(px, py, isConnectedToSelected ? 4.5 : (link.is_suspicious ? 3.5 : 2.5), 0, 2 * Math.PI);
+            ctx.fillStyle = link.is_suspicious ? '#DC2626' : (isConnectedToSelected ? '#2563EB' : '#0284C7');
             ctx.fill();
-          });
-        }
 
-        // Draw Nodes (100% Solid, Sharp, Never Blurred)
+            // Glowing Halo on Suspicious / Active Flow Packets
+            if (link.is_suspicious || isConnectedToSelected) {
+              ctx.beginPath();
+              ctx.arc(px, py, isConnectedToSelected ? 7.5 : 5.5, 0, 2 * Math.PI);
+              ctx.fillStyle = link.is_suspicious ? 'rgba(220, 38, 38, 0.3)' : 'rgba(37, 99, 235, 0.3)';
+              ctx.fill();
+            }
+          }
+        });
+
+        // 3. Draw Nodes (Solid, Sharp, Non-Fixed, Draggable)
         nodes.forEach((node) => {
           if (filterRiskOnly && !node.is_aml_flagged) return;
 
           const isSelected = activeSelId && activeSelId === node.id;
-          const currentRadius = isSelected ? node.radius + 4 : node.radius;
+          const isHovered = hoveredNodeId && hoveredNodeId === node.id;
+          const currentRadius = isSelected ? node.radius + 4 : (isHovered ? node.radius + 2 : node.radius);
 
-          // Halo for Selected or Critical Flagged Nodes
+          // Pulsing Halo for Selected or Malicious Nodes
           if (isSelected) {
             ctx.beginPath();
             ctx.arc(node.x, node.y, currentRadius + 8, 0, 2 * Math.PI);
             ctx.fillStyle = 'rgba(37, 99, 235, 0.25)';
             ctx.fill();
           } else if (node.is_aml_flagged) {
+            const pulse = Math.sin(timeSec * 3 + node.x) * 2 + 3;
             ctx.beginPath();
-            ctx.arc(node.x, node.y, currentRadius + 4, 0, 2 * Math.PI);
+            ctx.arc(node.x, node.y, currentRadius + pulse, 0, 2 * Math.PI);
             ctx.fillStyle = 'rgba(220, 38, 38, 0.18)';
             ctx.fill();
           }
 
-          // Node Body Fill (100% Solid & Vibrant)
+          // Node Body Fill
           ctx.beginPath();
           ctx.arc(node.x, node.y, currentRadius, 0, 2 * Math.PI);
           ctx.fillStyle = node.color;
@@ -371,12 +446,12 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
           // High-Contrast Crisp Borders
           if (isSelected) {
-            // Outer thick white ring
+            // Thick white outer ring
             ctx.strokeStyle = '#FFFFFF';
             ctx.lineWidth = 4;
             ctx.stroke();
 
-            // Inner dark slate ring
+            // Sharp dark slate inner ring
             ctx.beginPath();
             ctx.arc(node.x, node.y, currentRadius + 2, 0, 2 * Math.PI);
             ctx.strokeStyle = '#0F172A';
@@ -388,14 +463,14 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
             ctx.stroke();
           }
 
-          // Node Text Label (Sharp & Crisp)
+          // Crisp Node Text Labels
           if (isSelected) {
             const labelText = node.id;
             ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
             const textMetrics = ctx.measureText(labelText);
             const textWidth = textMetrics.width;
 
-            // Draw white pill background
+            // White badge background
             ctx.fillStyle = '#FFFFFF';
             ctx.strokeStyle = '#0F172A';
             ctx.lineWidth = 1.5;
@@ -425,12 +500,12 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       animId = requestAnimationFrame(render);
     };
 
-    render();
+    animId = requestAnimationFrame(render);
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [panOffset, zoomLevel, filterRiskOnly, selectedNode]);
+  }, [panOffset, zoomLevel, filterRiskOnly, selectedNode, hoveredNodeId]);
 
   // High-DPI Resize handler
   useEffect(() => {
@@ -452,71 +527,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Smooth dynamic zoom-in animation to center on selected node
-  const zoomToNode = (node, targetZoom = 1.5) => {
-    if (!node) return;
-    const width = 850;
-    const height = 500;
-    const targetPanX = (width / 2 - node.x) * targetZoom;
-    const targetPanY = (height / 2 - node.y) * targetZoom;
-
-    const startZoom = zoomLevel;
-    const startPanX = panOffset.x;
-    const startPanY = panOffset.y;
-    const duration = 380;
-    const startTime = performance.now();
-
-    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-
-    const animateZoom = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      const eased = easeOutCubic(progress);
-
-      setZoomLevel(startZoom + (targetZoom - startZoom) * eased);
-      setPanOffset({
-        x: startPanX + (targetPanX - startPanX) * eased,
-        y: startPanY + (targetPanY - startPanY) * eased
-      });
-
-      if (progress < 1) {
-        requestAnimationFrame(animateZoom);
-      }
-    };
-
-    requestAnimationFrame(animateZoom);
-  };
-
-  // Smooth zoom-out to overview
-  const zoomToOverview = () => {
-    const startZoom = zoomLevel;
-    const startPanX = panOffset.x;
-    const startPanY = panOffset.y;
-    const duration = 350;
-    const startTime = performance.now();
-
-    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-
-    const animateZoom = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      const eased = easeOutCubic(progress);
-
-      setZoomLevel(startZoom + (1.0 - startZoom) * eased);
-      setPanOffset({
-        x: startPanX + (0 - startPanX) * eased,
-        y: startPanY + (0 - startPanY) * eased
-      });
-
-      if (progress < 1) {
-        requestAnimationFrame(animateZoom);
-      }
-    };
-
-    requestAnimationFrame(animateZoom);
-  };
-
-  // Mouse drag & click handlers (Zero jitter, clean selection, dynamic zoom)
+  // Mouse drag & interactive node dragging handlers
   const handleMouseDown = (e) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -533,7 +544,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
     (simNodesRef.current || []).forEach((node) => {
       const dx = node.x - worldX;
       const dy = node.y - worldY;
-      if (Math.sqrt(dx * dx + dy * dy) <= node.radius + 8) {
+      if (Math.sqrt(dx * dx + dy * dy) <= node.radius + 10) {
         clicked = node;
       }
     });
@@ -542,7 +553,6 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
       setSelectedNode(clicked);
       setDraggingNodeId(clicked.id);
       if (onSelectNode) onSelectNode(clicked);
-      // Trigger dynamic smooth zoom-in centered on the clicked node
       zoomToNode(clicked, 1.55);
     } else {
       setIsDraggingCanvas(true);
@@ -552,16 +562,16 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
   const handleMouseMove = (e) => {
     if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const width = rect.width;
+    const height = rect.height;
+
+    const worldX = (mouseX - (width / 2 + panOffset.x)) / zoomLevel + width / 2;
+    const worldY = (mouseY - (height / 2 + panOffset.y)) / zoomLevel + height / 2;
+
     if (draggingNodeId) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      const width = rect.width;
-      const height = rect.height;
-
-      const worldX = (mouseX - (width / 2 + panOffset.x)) / zoomLevel + width / 2;
-      const worldY = (mouseY - (height / 2 + panOffset.y)) / zoomLevel + height / 2;
-
       const node = simNodesRef.current.find(n => n.id === draggingNodeId);
       if (node) {
         node.x = worldX;
@@ -572,6 +582,17 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
       });
+    } else {
+      // Check node hover for interactive cursor
+      let hovered = null;
+      (simNodesRef.current || []).forEach((node) => {
+        const dx = node.x - worldX;
+        const dy = node.y - worldY;
+        if (Math.sqrt(dx * dx + dy * dy) <= node.radius + 8) {
+          hovered = node.id;
+        }
+      });
+      setHoveredNodeId(hovered);
     }
   };
 
@@ -587,7 +608,7 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
 
   return (
     <div 
-      className="relative w-full h-[520px] rounded-xl overflow-hidden border border-slate-300 bg-[#F8FAFC] flex flex-col shadow-xs" 
+      className="relative w-full h-[520px] rounded-xl overflow-hidden border border-slate-300 bg-[#F8FAFC] flex flex-col shadow-xs select-none" 
       ref={containerRef}
     >
       {/* Top HUD Controls Ribbon */}
@@ -645,7 +666,9 @@ export function NetworkGraphCanvas({ data, onSelectNode, selectedNodeId }) {
         ref={canvasRef}
         width={850}
         height={520}
-        className="w-full h-full cursor-grab active:cursor-grabbing block"
+        className={`w-full h-full block ${
+          draggingNodeId ? 'cursor-grabbing' : (hoveredNodeId ? 'cursor-pointer' : (isDraggingCanvas ? 'cursor-grabbing' : 'cursor-grab'))
+        }`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

@@ -20,6 +20,10 @@ export function BatchSimulator() {
 
   const handleRunSimulation = async () => {
     setLoading(true);
+    // Explicitly clear old simulation batch data & topology
+    setSimulationData(null);
+    setGraphTopology(null);
+
     try {
       const result = await api.runBatchSimulation(numTxns, launderingRatio, selectedPatterns);
       setSimulationData(result);

@@ -139,12 +139,13 @@ export class ApiService {
     const transactions = [];
     const launderingCount = Math.round(numTxns * launderingRatio);
     const safeCount = numTxns - launderingCount;
+    const batchSeed = Math.floor(100 + Math.random() * 900);
 
-    // Distinct realistic account pools
-    const muleAccounts = Array.from({ length: 12 }, (_, i) => `ACC_MULE_${101 + i}`);
-    const shellAccounts = Array.from({ length: 6 }, (_, i) => `ACC_SHELL_${201 + i}`);
-    const corporateGateways = Array.from({ length: 8 }, (_, i) => `ACC_CORP_${301 + i}`);
-    const retailAccounts = Array.from({ length: Math.max(16, Math.floor(numTxns * 0.6)) }, (_, i) => `ACC_RETAIL_${401 + i}`);
+    // Distinct realistic account pools tailored to this specific batch run
+    const muleAccounts = Array.from({ length: 12 }, (_, i) => `ACC_MULE_${batchSeed}_${101 + i}`);
+    const shellAccounts = Array.from({ length: 6 }, (_, i) => `ACC_SHELL_${batchSeed}_${201 + i}`);
+    const corporateGateways = Array.from({ length: 8 }, (_, i) => `ACC_CORP_${batchSeed}_${301 + i}`);
+    const retailAccounts = Array.from({ length: Math.max(16, Math.floor(numTxns * 0.6)) }, (_, i) => `ACC_RETAIL_${batchSeed}_${401 + i}`);
 
     let critical = 0, high = 0, medium = 0, low = 0;
     let totalFlaggedInr = 0;
@@ -192,7 +193,7 @@ export class ApiService {
       totalFlaggedInr += amount;
 
       transactions.push({
-        id: `TXN-SIM-${1000 + i}`,
+        id: `TXN-${batchSeed}-${1000 + i}`,
         sender,
         receiver,
         amount_inr: amount,
@@ -212,7 +213,7 @@ export class ApiService {
       let receiver = isMediumAnomaly 
         ? corporateGateways[j % corporateGateways.length]
         : retailAccounts[(j + 3) % retailAccounts.length];
-      while (receiver === sender) receiver = `ACC_RECV_${j + 900}`;
+      while (receiver === sender) receiver = `ACC_RECV_${batchSeed}_${j + 900}`;
 
       const amount = isMediumAnomaly 
         ? Math.floor(180000 + Math.random() * 220000)
@@ -233,7 +234,7 @@ export class ApiService {
       }
 
       transactions.push({
-        id: `TXN-SIM-${1000 + launderingCount + j}`,
+        id: `TXN-${batchSeed}-${1000 + launderingCount + j}`,
         sender,
         receiver,
         amount_inr: amount,
@@ -250,6 +251,7 @@ export class ApiService {
     transactions.sort(() => Math.random() - 0.5);
 
     return {
+      batch_id: `BATCH-${batchSeed}`,
       summary: {
         total_transactions: numTxns,
         critical_alerts: critical,
