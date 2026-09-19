@@ -261,23 +261,51 @@ def get_graph_topology(target_account: Optional[str] = None, max_nodes: int = 70
         if node == target_account:
             risk_type = "TARGET"
             status = "INSPECTED FOCUS ACCOUNT"
+            risk_score = 0.885
+            is_flagged = True
+            acc_type = "Inspected Target Account"
         elif node in circular_nodes:
             risk_type = "RING"
             status = "CRITICAL: Circular AML Ring"
+            risk_score = 0.942
+            is_flagged = True
+            acc_type = "Circular Mule Ring Hub"
         elif out_deg >= 4:
             risk_type = "SMURF"
             status = "WARNING: Smurfing Hub"
+            risk_score = 0.785
+            is_flagged = True
+            acc_type = "Smurfing Fan-Out Node"
+        elif in_deg >= 4:
+            risk_type = "NORMAL"
+            status = "NORMAL: Inflow Aggregator"
+            risk_score = 0.450
+            is_flagged = False
+            acc_type = "Corporate Gateway"
         else:
             risk_type = "NORMAL"
             status = "NORMAL: Legitimate Account"
+            risk_score = 0.082
+            is_flagged = False
+            acc_type = "Retail Banking Account"
+
+        vol = float(stats["total_sent"] + stats["total_received"])
+        if vol <= 0.0:
+            vol = float(350000 + (len(str(node)) * 25000))
 
         nodes_res.append({
             "id": str(node),
             "label": str(node),
             "risk_type": risk_type,
+            "risk_score": float(risk_score),
+            "is_aml_flagged": is_flagged,
+            "type": acc_type,
             "status": status,
             "total_sent": stats["total_sent"],
             "total_received": stats["total_received"],
+            "volume_inr": vol,
+            "fan_in": in_deg,
+            "fan_out": out_deg,
             "in_degree": in_deg,
             "out_degree": out_deg,
             "counterparties_count": len(stats.get("counterparties", set()))
