@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GnnPipelineFlowchart, TwoHopMessagePassingDiagram } from './charts/FlowDiagrams';
 
 export function ArchitecturePipeline({ onNavigateToSimulator }) {
   const [selectedStage, setSelectedStage] = useState(0);
@@ -156,6 +157,9 @@ elif risk_score >= 0.70:
 
   return (
     <div className="space-y-6">
+      {/* Interactive 6-Stage End-to-End Architecture Flowchart */}
+      <GnnPipelineFlowchart />
+
       {/* Top Banner & Simulation Controls */}
       <div className="fintech-card p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

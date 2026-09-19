@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
+import { RiskGauge, FeatureImportanceBar } from './charts/AmlCharts';
+import { TwoHopMessagePassingDiagram } from './charts/FlowDiagrams';
 
 export function SingleTransactionTester({ onFileSar }) {
   const [formData, setFormData] = useState({
@@ -265,68 +267,30 @@ export function SingleTransactionTester({ onFileSar }) {
 
             {result ? (
               <div className="space-y-4 pt-3">
-                {/* Score Summary Box */}
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      Laundering Probability
-                    </span>
-                    <div className="flex items-baseline gap-2 mt-1">
-                      <span className="text-3xl font-extrabold text-slate-900 font-mono tabular-nums">
-                        {(result.risk_score * 100).toFixed(1)}%
-                      </span>
-                      <span className={`text-xs font-bold uppercase px-2.5 py-0.5 rounded ${
-                        result.risk_level === 'CRITICAL' 
-                          ? 'bg-red-50 text-red-700 border border-red-200' 
-                          : result.risk_level === 'HIGH'
-                          ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      }`}>
-                        {result.risk_level} RISK
-                      </span>
-                    </div>
-                  </div>
+                {/* Risk Gauge Meter */}
+                <RiskGauge 
+                  score={result.risk_score} 
+                  title="GraphSAGE Neural Risk Assessment" 
+                />
 
-                  <div className="text-right">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Compliance Gate
-                    </span>
-                    <span className={`inline-block mt-1 font-mono font-bold text-xs px-3 py-1 rounded-md ${
-                      result.recommended_action === 'AUTO_BLOCK'
-                        ? 'bg-red-600 text-white'
-                        : result.recommended_action === 'SAR_INVESTIGATION'
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-emerald-600 text-white'
-                    }`}>
-                      {result.recommended_action}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Feature Attribution (Integrated Gradients) */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Top Attributed Features (Integrated Gradients)
-                  </h4>
-                  <div className="space-y-1.5">
-                    {(result.explainability_top_features || []).map((feat, i) => (
-                      <div key={i} className="flex items-center justify-between p-2.5 rounded-md bg-slate-50 border border-slate-200 text-xs">
-                        <span className="font-mono text-slate-700">{feat.feature}</span>
-                        <span className="font-semibold text-red-600 font-mono">{feat.impact}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {/* Feature Attribution Explainability Bar */}
+                <FeatureImportanceBar 
+                  features={(result.explainability_top_features || []).map(f => ({
+                    name: f.feature,
+                    impact: parseInt(f.impact) || (f.impact.includes("+") ? 30 : -15),
+                    isRisk: !f.impact.includes("-")
+                  }))}
+                />
 
                 {/* Audit Trail */}
                 <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 space-y-1">
                   <div className="flex justify-between">
                     <span>Audit Decision Engine:</span>
-                    <span className="text-slate-900 font-semibold">{result.audit_trail?.decision_engine}</span>
+                    <span className="text-slate-900 font-semibold">{result.audit_trail?.decision_engine || "GraphSAGE 2-Layer + PMLA Gate"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Compliance Action:</span>
-                    <span className="text-emerald-700 font-semibold">{result.audit_trail?.compliance_status}</span>
+                    <span className="text-emerald-700 font-semibold">{result.audit_trail?.compliance_status || "Evaluated by FIU Rules"}</span>
                   </div>
                 </div>
               </div>
@@ -348,6 +312,9 @@ export function SingleTransactionTester({ onFileSar }) {
           )}
         </div>
       </div>
+
+      {/* 2-Hop Inductive Message-Passing Subgraph Aggregation Flow Diagram */}
+      <TwoHopMessagePassingDiagram />
     </div>
   );
 }

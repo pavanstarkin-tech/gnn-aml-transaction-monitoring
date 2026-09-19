@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { RocPrCurveChart, ConfusionMatrixHeatmap } from './charts/AmlCharts';
 
 export function MlopsMonitor() {
   const [status, setStatus] = useState(null);
@@ -113,6 +114,12 @@ export function MlopsMonitor() {
           </span>
           <span className="text-[11px] text-slate-500 mt-1 block">Sub-10ms real-time SLA</span>
         </div>
+      </div>
+
+      {/* Diagnostic ML Model Visualizations (ROC/PR Curves & Confusion Matrix Heatmap) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RocPrCurveChart />
+        <ConfusionMatrixHeatmap />
       </div>
 
       {/* Drift Diagnostics & KS Tests */}

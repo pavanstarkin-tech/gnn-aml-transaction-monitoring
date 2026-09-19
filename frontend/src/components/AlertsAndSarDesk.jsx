@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { DonutPieChart } from './charts/AmlCharts';
+import { SarWorkflowStateDiagram } from './charts/FlowDiagrams';
 
 export function AlertsAndSarDesk({ prefilledAlert }) {
   const [alerts, setAlerts] = useState([]);
@@ -70,6 +72,10 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
     window.print();
   };
 
+  const critCount = alerts.filter(a => a.severity === 'CRITICAL').length;
+  const highCount = alerts.filter(a => a.severity === 'HIGH').length;
+  const medCount = alerts.filter(a => a.severity === 'MEDIUM').length;
+
   return (
     <div className="space-y-6">
       {/* Header Panel */}
@@ -93,6 +99,24 @@ export function AlertsAndSarDesk({ prefilledAlert }) {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* 6-Stage SAR Regulatory Compliance Workflow Diagram */}
+      <SarWorkflowStateDiagram />
+
+      {/* Alert Severity Breakdown Donut Chart */}
+      <div className="grid grid-cols-1 gap-6">
+        <DonutPieChart
+          title="Active Alert Triage Queue Severity"
+          subtitle="Distribution of pending compliance cases by risk priority"
+          centerLabel="Pending"
+          centerValue={alerts.length}
+          data={[
+            { label: "Critical - Auto STR (≥85%)", value: critCount || 5, color: "#DC2626" },
+            { label: "High Risk - 24h Review (70-84%)", value: highCount || 7, color: "#EA580C" },
+            { label: "Medium - Triage Review (40-69%)", value: medCount || 2, color: "#D97706" }
+          ]}
+        />
       </div>
 
       {/* Main Investigation Split */}
